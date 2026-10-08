@@ -1,0 +1,349 @@
+{
+  "Roll-up": [
+    {
+      "Age_Bracket": 1,
+      "Total_Respondents": 979,
+      "Diabetes_Cases": 78,
+      "Prevalence_Pct": 7.97,
+      "Avg_BMI": 26.21
+    },
+    {
+      "Age_Bracket": 2,
+      "Total_Respondents": 1396,
+      "Diabetes_Cases": 140,
+      "Prevalence_Pct": 10.03,
+      "Avg_BMI": 28.12
+    },
+    {
+      "Age_Bracket": 3,
+      "Total_Respondents": 2049,
+      "Diabetes_Cases": 314,
+      "Prevalence_Pct": 15.32,
+      "Avg_BMI": 29.01
+    },
+    {
+      "Age_Bracket": 4,
+      "Total_Respondents": 2793,
+      "Diabetes_Cases": 626,
+      "Prevalence_Pct": 22.41,
+      "Avg_BMI": 29.74
+    },
+    {
+      "Age_Bracket": 5,
+      "Total_Respondents": 3520,
+      "Diabetes_Cases": 1051,
+      "Prevalence_Pct": 29.86,
+      "Avg_BMI": 30.43
+    },
+    {
+      "Age_Bracket": 6,
+      "Total_Respondents": 4648,
+      "Diabetes_Cases": 1742,
+      "Prevalence_Pct": 37.48,
+      "Avg_BMI": 30.58
+    },
+    {
+      "Age_Bracket": 7,
+      "Total_Respondents": 6872,
+      "Diabetes_Cases": 3088,
+      "Prevalence_Pct": 44.94,
+      "Avg_BMI": 30.63
+    },
+    {
+      "Age_Bracket": 8,
+      "Total_Respondents": 8603,
+      "Diabetes_Cases": 4263,
+      "Prevalence_Pct": 49.55,
+      "Avg_BMI": 30.71
+    },
+    {
+      "Age_Bracket": 9,
+      "Total_Respondents": 10112,
+      "Diabetes_Cases": 5733,
+      "Prevalence_Pct": 56.7,
+      "Avg_BMI": 30.58
+    },
+    {
+      "Age_Bracket": 10,
+      "Total_Respondents": 10856,
+      "Diabetes_Cases": 6558,
+      "Prevalence_Pct": 60.41,
+      "Avg_BMI": 30.4
+    },
+    {
+      "Age_Bracket": 11,
+      "Total_Respondents": 8044,
+      "Diabetes_Cases": 5141,
+      "Prevalence_Pct": 63.91,
+      "Avg_BMI": 29.61
+    },
+    {
+      "Age_Bracket": 12,
+      "Total_Respondents": 5394,
+      "Diabetes_Cases": 3403,
+      "Prevalence_Pct": 63.09,
+      "Avg_BMI": 28.75
+    },
+    {
+      "Age_Bracket": 13,
+      "Total_Respondents": 5426,
+      "Diabetes_Cases": 3209,
+      "Prevalence_Pct": 59.14,
+      "Avg_BMI": 27.05
+    }
+  ],
+  "Drill-down": [
+    {
+      "Age_Bracket": 9,
+      "Gender": "Female",
+      "Total_Respondents": 5385,
+      "Diabetes_Cases": 2968,
+      "Prevalence_Pct": 55.12
+    },
+    {
+      "Age_Bracket": 9,
+      "Gender": "Male",
+      "Total_Respondents": 4727,
+      "Diabetes_Cases": 2765,
+      "Prevalence_Pct": 58.49
+    },
+    {
+      "Age_Bracket": 10,
+      "Gender": "Female",
+      "Total_Respondents": 5658,
+      "Diabetes_Cases": 3250,
+      "Prevalence_Pct": 57.44
+    },
+    {
+      "Age_Bracket": 10,
+      "Gender": "Male",
+      "Total_Respondents": 5198,
+      "Diabetes_Cases": 3308,
+      "Prevalence_Pct": 63.64
+    },
+    {
+      "Age_Bracket": 11,
+      "Gender": "Female",
+      "Total_Respondents": 4221,
+      "Diabetes_Cases": 2553,
+      "Prevalence_Pct": 60.48
+    },
+    {
+      "Age_Bracket": 11,
+      "Gender": "Male",
+      "Total_Respondents": 3823,
+      "Diabetes_Cases": 2588,
+      "Prevalence_Pct": 67.7
+    }
+  ],
+  "Slice": [
+    {
+      "General_Health": 1,
+      "Total_Respondents": 2105,
+      "Diabetes_Cases": 731,
+      "Diabetes_Prevalence_Pct": 34.73
+    },
+    {
+      "General_Health": 2,
+      "Total_Respondents": 8740,
+      "Diabetes_Cases": 4305,
+      "Diabetes_Prevalence_Pct": 49.26
+    },
+    {
+      "General_Health": 3,
+      "Total_Respondents": 14583,
+      "Diabetes_Cases": 9944,
+      "Diabetes_Prevalence_Pct": 68.19
+    },
+    {
+      "General_Health": 4,
+      "Total_Respondents": 9833,
+      "Diabetes_Cases": 7811,
+      "Diabetes_Prevalence_Pct": 79.44
+    },
+    {
+      "General_Health": 5,
+      "Total_Respondents": 4571,
+      "Diabetes_Cases": 3813,
+      "Diabetes_Prevalence_Pct": 83.42
+    }
+  ],
+  "Dice": [
+    {
+      "Income_Bracket": 1,
+      "Smoker_Status": 0,
+      "Respondent_Count": 481,
+      "Diabetes_Prevalence_Pct": 84.2
+    },
+    {
+      "Income_Bracket": 1,
+      "Smoker_Status": 1,
+      "Respondent_Count": 506,
+      "Diabetes_Prevalence_Pct": 80.83
+    },
+    {
+      "Income_Bracket": 2,
+      "Smoker_Status": 0,
+      "Respondent_Count": 691,
+      "Diabetes_Prevalence_Pct": 82.49
+    },
+    {
+      "Income_Bracket": 2,
+      "Smoker_Status": 1,
+      "Respondent_Count": 903,
+      "Diabetes_Prevalence_Pct": 80.51
+    },
+    {
+      "Income_Bracket": 3,
+      "Smoker_Status": 0,
+      "Respondent_Count": 852,
+      "Diabetes_Prevalence_Pct": 79.34
+    },
+    {
+      "Income_Bracket": 3,
+      "Smoker_Status": 1,
+      "Respondent_Count": 1017,
+      "Diabetes_Prevalence_Pct": 80.33
+    },
+    {
+      "Income_Bracket": 4,
+      "Smoker_Status": 0,
+      "Respondent_Count": 976,
+      "Diabetes_Prevalence_Pct": 78.28
+    },
+    {
+      "Income_Bracket": 4,
+      "Smoker_Status": 1,
+      "Respondent_Count": 1282,
+      "Diabetes_Prevalence_Pct": 76.44
+    },
+    {
+      "Income_Bracket": 5,
+      "Smoker_Status": 0,
+      "Respondent_Count": 1165,
+      "Diabetes_Prevalence_Pct": 73.56
+    },
+    {
+      "Income_Bracket": 5,
+      "Smoker_Status": 1,
+      "Respondent_Count": 1500,
+      "Diabetes_Prevalence_Pct": 75.6
+    },
+    {
+      "Income_Bracket": 6,
+      "Smoker_Status": 0,
+      "Respondent_Count": 1406,
+      "Diabetes_Prevalence_Pct": 70.63
+    },
+    {
+      "Income_Bracket": 6,
+      "Smoker_Status": 1,
+      "Respondent_Count": 1734,
+      "Diabetes_Prevalence_Pct": 72.26
+    },
+    {
+      "Income_Bracket": 7,
+      "Smoker_Status": 0,
+      "Respondent_Count": 1335,
+      "Diabetes_Prevalence_Pct": 69.44
+    },
+    {
+      "Income_Bracket": 7,
+      "Smoker_Status": 1,
+      "Respondent_Count": 1535,
+      "Diabetes_Prevalence_Pct": 71.01
+    },
+    {
+      "Income_Bracket": 8,
+      "Smoker_Status": 0,
+      "Respondent_Count": 1699,
+      "Diabetes_Prevalence_Pct": 64.74
+    },
+    {
+      "Income_Bracket": 8,
+      "Smoker_Status": 1,
+      "Respondent_Count": 1791,
+      "Diabetes_Prevalence_Pct": 65.27
+    }
+  ],
+  "Pivot": [
+    {
+      "Age_Bracket": 1,
+      "Female_Diabetes_Cases": 45,
+      "Male_Diabetes_Cases": 33,
+      "Overall_Prevalence_Pct": 7.97
+    },
+    {
+      "Age_Bracket": 2,
+      "Female_Diabetes_Cases": 89,
+      "Male_Diabetes_Cases": 51,
+      "Overall_Prevalence_Pct": 10.03
+    },
+    {
+      "Age_Bracket": 3,
+      "Female_Diabetes_Cases": 191,
+      "Male_Diabetes_Cases": 123,
+      "Overall_Prevalence_Pct": 15.32
+    },
+    {
+      "Age_Bracket": 4,
+      "Female_Diabetes_Cases": 366,
+      "Male_Diabetes_Cases": 260,
+      "Overall_Prevalence_Pct": 22.41
+    },
+    {
+      "Age_Bracket": 5,
+      "Female_Diabetes_Cases": 576,
+      "Male_Diabetes_Cases": 475,
+      "Overall_Prevalence_Pct": 29.86
+    },
+    {
+      "Age_Bracket": 6,
+      "Female_Diabetes_Cases": 902,
+      "Male_Diabetes_Cases": 840,
+      "Overall_Prevalence_Pct": 37.48
+    },
+    {
+      "Age_Bracket": 7,
+      "Female_Diabetes_Cases": 1642,
+      "Male_Diabetes_Cases": 1446,
+      "Overall_Prevalence_Pct": 44.94
+    },
+    {
+      "Age_Bracket": 8,
+      "Female_Diabetes_Cases": 2255,
+      "Male_Diabetes_Cases": 2008,
+      "Overall_Prevalence_Pct": 49.55
+    },
+    {
+      "Age_Bracket": 9,
+      "Female_Diabetes_Cases": 2968,
+      "Male_Diabetes_Cases": 2765,
+      "Overall_Prevalence_Pct": 56.7
+    },
+    {
+      "Age_Bracket": 10,
+      "Female_Diabetes_Cases": 3250,
+      "Male_Diabetes_Cases": 3308,
+      "Overall_Prevalence_Pct": 60.41
+    },
+    {
+      "Age_Bracket": 11,
+      "Female_Diabetes_Cases": 2553,
+      "Male_Diabetes_Cases": 2588,
+      "Overall_Prevalence_Pct": 63.91
+    },
+    {
+      "Age_Bracket": 12,
+      "Female_Diabetes_Cases": 1834,
+      "Male_Diabetes_Cases": 1569,
+      "Overall_Prevalence_Pct": 63.09
+    },
+    {
+      "Age_Bracket": 13,
+      "Female_Diabetes_Cases": 1740,
+      "Male_Diabetes_Cases": 1469,
+      "Overall_Prevalence_Pct": 59.14
+    }
+  ]
+}
