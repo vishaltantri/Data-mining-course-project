@@ -71,7 +71,7 @@ Traditional clinical screening relies heavily on laboratory blood tests (e.g., F
 ### 6.2 Dataset Version
 We evaluated three variants available in the repository:
 1. `diabetes_012_health_indicators_BRFSS2015.csv` (253,680 rows, 3-class target: 0=No Diabetes, 1=Prediabetes, 2=Diabetes).
-2. `diabetes_binary_health_indicators_BRFSS2015.csv` (253,680 rows, binary target: 0=No Diabetes, 1=Prediabetes/Diabetes).
+2. `diabetes_binary_health_indicators_BRFSS2015.csv` (253,680 rows, binary target: 0=No Diabetes, 1=Diagnosed Diabetes only; the 4,631 prediabetes respondents are coded 0).
 3. `diabetes_binary_5050split_health_indicators_BRFSS2015.csv` (70,692 rows, 50/50 balanced binary target).
 
 *Scope Decision:* The **balanced 50/50 split dataset (70,692 rows × 22 columns)** is selected as the primary dataset for data mining and EDA to eliminate severe class imbalance bias, while the full **253,680 record dataset** is preserved for data warehousing population queries.
@@ -85,7 +85,7 @@ We evaluated three variants available in the repository:
 
 | Attribute Name | Data Type | Value Range / Categories | Description | Role in DW |
 | :--- | :--- | :--- | :--- | :--- |
-| **`Diabetes_binary`** | Numeric (Float/Int) | 0, 1 | 0 = No Diabetes, 1 = Prediabetes / Diabetes | **Target / Measure** |
+| **`Diabetes_binary`** | Numeric (Float/Int) | 0, 1 | 0 = No Diabetes, 1 = Diagnosed Diabetes (prediabetes coded 0) | **Target / Measure** |
 | **`HighBP`** | Numeric (Binary) | 0, 1 | 0 = No High BP, 1 = High BP diagnosed | Dimension Attribute |
 | **`HighChol`** | Numeric (Binary) | 0, 1 | 0 = No High Cholesterol, 1 = High Cholesterol | Dimension Attribute |
 | **`CholCheck`** | Numeric (Binary) | 0, 1 | 0 = No check in 5 yrs, 1 = Checked in past 5 yrs | Dimension Attribute |
@@ -110,10 +110,19 @@ We evaluated three variants available in the repository:
 
 ### 6.5 Target Variable
 - **Name:** `Diabetes_binary`
-- **Encoding:** `0.0` = No Diabetes (negative control), `1.0` = Prediabetes or Diagnosed Diabetes (positive class).
+- **Encoding:** `0.0` = No Diabetes (negative control), `1.0` = Diagnosed Diabetes only (positive class). Note: The 4,631 prediabetes respondents (from the 3-class file) are coded as 0 in the binary file.
 
-### 6.6 Dataset Relevance
+### 6.6 Data Provenance
+The original CDC BRFSS 2015 telephone survey collected responses from 441,455 adults across all 50 US states and territories, recording 330 variables. The Kaggle author (Alex Teboul) cleaned and reduced this to 253,680 respondents × 22 health indicators. The exact cleaning steps are documented in the author's notebook on the Kaggle dataset page.
+
+### 6.7 Dataset Relevance
 The dataset is directly aligned with healthcare data warehousing and public health data mining. It contains a balance of clinical risk factors (`HighBP`, `HighChol`), lifestyle behaviors (`Smoker`, `PhysActivity`), socio-demographics (`Age`, `Income`, `Sex`), and general health metrics (`GenHlth`, `BMI`), making it optimal for multi-dimensional OLAP analysis, association rule mining, and machine learning classification.
+
+### 6.8 Limitations
+- The balanced 50/50 sample does not reflect population prevalence (~14% diabetes in the full file).
+- Prediabetes respondents (4,631) are coded as 0 in the binary target, which may underestimate true metabolic risk.
+- All data is self-reported from a single cross-sectional survey year (2015); associations do not imply causation.
+- The dataset does not include laboratory test results (e.g., HbA1c, fasting glucose).
 
 ---
 
@@ -161,7 +170,7 @@ We systematically reviewed all 9 class lab manuals and assignment reference PDFs
 - **Observation:** The CDC BRFSS 2015 dataset is complete with no missing values in any of the 22 columns across all 70,692 records. No imputation is necessary.
 
 ### 9.2 Duplicate Records
-- **Full Dataset (253,680 rows):** 23,899 duplicates (9.42%)
+- **Full Dataset (253,680 rows):** 24,206 duplicates (9.5%)
 - **50/50 Balanced Dataset (70,692 rows):** 1,635 duplicates (2.31%)
 - **Interpretation:** Duplicates exist because all 22 attributes are discrete, ordinal, or integer-encoded survey responses (e.g., age bracket 1-13, binary flags 0/1). Identical respondent survey profiles naturally occur in large population samples. These represent distinct individual respondents who share identical demographic and clinical responses, not corrupted duplicate records.
 
@@ -180,7 +189,7 @@ We systematically reviewed all 9 class lab manuals and assignment reference PDFs
 - **Result:** 0 invalid or out-of-bounds values found.
 
 ### 9.5 Outliers
-- **BMI Outliers (> 50.0):** 572 records (0.81% of sample). Max BMI = 98.0.
+- **BMI Outliers (> 50.0):** 923 records (1.3% of sample). Max BMI = 98.0.
   - *Decision:* Retained. Super-obesity (BMI > 50) is clinically valid and strongly associated with severe diabetes and metabolic syndrome.
 - **PhysHlth / MentHlth = 30 Days:** 4,312 respondents reported 30 days of poor physical health.
   - *Decision:* Retained. Represents chronic disability/illness.
@@ -188,10 +197,10 @@ We systematically reviewed all 9 class lab manuals and assignment reference PDFs
 ### 9.6 Class Distribution
 - **Full Dataset (N = 253,680):**
   - Class 0 (No Diabetes): 218,334 (86.07%)
-  - Class 1 (Diabetes / Prediabetes): 35,346 (13.93%)
+  - Class 1 (Diagnosed Diabetes): 35,346 (13.93%)
 - **Primary Balanced Dataset (N = 70,692):**
   - Class 0 (No Diabetes): 35,346 (50.00%)
-  - Class 1 (Diabetes / Prediabetes): 35,346 (50.00%)
+  - Class 1 (Diagnosed Diabetes): 35,346 (50.00%)
 - **Observation:** The 50/50 split dataset eliminates class imbalance bias, ensuring that evaluation metrics (Accuracy, Precision, Recall, F1) remain balanced during mining model training.
 
 ### 9.7 Potential Data Leakage
@@ -352,7 +361,7 @@ All 5 OLAP operations were implemented in SQL and executed against `review1/diab
   JOIN DIM_DEMOGRAPHICS d ON f.demog_key = d.demog_key
   GROUP BY d.age ORDER BY d.age;
   ```
-- **Result Summary:** Age bracket 1 (18-24) has 8.0% prevalence (Avg BMI 26.2), escalating monotonically to Age bracket 9 (60-64) with 56.9% prevalence (Avg BMI 30.7) and Age bracket 13 (80+) with 51.6% prevalence.
+- **Result Summary:** Age bracket 1 (18-24) has 8.0% prevalence (Avg BMI 26.2), escalating monotonically to Age bracket 9 (60-64) with 56.9% prevalence (Avg BMI 30.7) and Age bracket 13 (80+) with 59.1% prevalence.
 
 ### Drill-down
 - **Description:** Navigating from senior age brackets (Age 60-74) into finer detail by breaking down prevalence by Gender (`Sex`).
@@ -382,7 +391,7 @@ All 5 OLAP operations were implemented in SQL and executed against `review1/diab
   WHERE c.high_bp = 1
   GROUP BY g.gen_hlth_rating ORDER BY g.gen_hlth_rating;
   ```
-- **Result Summary:** Among hypertensive respondents, those rating health as '1: Excellent' have 26.9% diabetes prevalence, whereas those rating health as '5: Poor' have 78.4% diabetes prevalence.
+- **Result Summary:** Among hypertensive respondents, those rating health as '1: Excellent' have 34.7% diabetes prevalence, whereas those rating health as '5: Poor' have 83.4% diabetes prevalence.
 
 ### Dice
 - **Description:** Selecting a sub-cube defined by multiple conditions: Age ≥ 9 (60+), High BP = 1, and High Cholesterol = 1, evaluated across Income brackets and Smoking status.
@@ -412,7 +421,7 @@ All 5 OLAP operations were implemented in SQL and executed against `review1/diab
   JOIN DIM_DEMOGRAPHICS d ON f.demog_key = d.demog_key
   GROUP BY d.age ORDER BY d.age;
   ```
-- **Result Summary:** Male diabetes cases exceed female cases in age brackets 6-10 (ages 45-69), after which female cases equal or exceed male cases in senior brackets 11-13 (70+).
+- **Result Summary:** Male diabetes cases exceed female cases only in age brackets 10–11 (ages 65–74), after which female cases equal or exceed male cases in senior brackets 12–13 (75+).
 
 ---
 
@@ -474,7 +483,7 @@ Mapped directly to the slides of `DWDM_Lab_Project_Template_Week1.pptx`:
 - **Why this dataset?** Addresses high-prevalence chronic diabetes risk and cardiovascular comorbidities using non-invasive survey indicators. 0 missing values; balanced 50/50 target distribution.
 
 ### Slide 3: Attribute Summary
-- **Target:** `Diabetes_binary` (Binary: 0=No Diabetes, 1=Diabetes/Prediabetes) -> Fact Measure
+- **Target:** `Diabetes_binary` (Binary: 0=No Diabetes, 1=Diagnosed Diabetes only; prediabetes coded 0) -> Fact Measure
 - **Clinical Measures:** `BMI` (Continuous 12-98), `PhysHlth` (0-30 days), `MentHlth` (0-30 days) -> Fact Measures
 - **Dimensions:** `HighBP` (0/1), `HighChol` (0/1), `Smoker` (0/1), `PhysActivity` (0/1), `GenHlth` (1-5), `Age` (1-13), `Sex` (0/1), `Income` (1-8) -> Dimension Attributes
 
@@ -531,8 +540,7 @@ It executes live verification of:
    *A:* It is a large, nationally representative public health dataset with 22 structured health indicators, zero missing values, and established clinical relevance for diabetes and cardiovascular disease analysis.
 2. **Q: Why are there duplicate rows in your dataset? Did you remove them?**  
    *A:* All 22 variables are discrete integer survey codes (e.g., Age 1-13, binary flags 0/1). In a population of 70,000+, multiple distinct respondents naturally give identical answers. They represent valid individual survey responses, not corrupted records, so they are preserved.
-3. **Q: What is the primary target variable and its encoding?**  
-   *A:* `Diabetes_binary` where 0 represents No Diabetes and 1 represents Prediabetes or Diagnosed Diabetes.
+3. **Q: What is the primary target variable and its encoding?**    *A:* `Diabetes_binary` where 0 represents No Diabetes (including the 4,631 prediabetes respondents, who are coded 0) and 1 represents Diagnosed Diabetes only.
 4. **Q: Why are you using the 50/50 split dataset instead of the 253,680 record dataset?**  
    *A:* The 253k dataset has an 86/14 class imbalance which causes machine learning models to favor the majority class. The 50/50 split dataset (70,692 rows) provides a balanced target distribution for unbiased classifier training, while the 253k dataset is kept for population data warehousing.
 5. **Q: What is the grain of your Data Warehouse?**  
@@ -546,7 +554,7 @@ It executes live verification of:
 9. **Q: What is your Dice operation?**  
    *A:* Sub-cube filtering across multiple dimensions: Age ≥ 60, High BP = 1, and High Cholesterol = 1, analyzed by Income level and Smoking status.
 10. **Q: How does `GenHlth` correlate with diabetes?**  
-    *A:* `GenHlth` is the strongest predictor ($r = 0.4076$). Diabetes prevalence rises from 10.8% among respondents reporting '1: Excellent' health up to 78.4% among those reporting '5: Poor' health with hypertension.
+    *A:* `GenHlth` is the strongest predictor ($r = 0.4076$). Diabetes prevalence rises from 13.8% among respondents reporting '1: Excellent' health up to 83.4% among those reporting '5: Poor' health with hypertension.
 11. **Q: Is `HeartDiseaseorAttack` a target or a feature?**  
     *A:* In our primary classification model, `Diabetes_binary` is the primary target and `HeartDiseaseorAttack` is a clinical comorbidity dimension feature. However, it can also serve as a secondary target for comorbidity risk analysis.
 12. **Q: Why use Chi-Square tests of independence in R?**  
