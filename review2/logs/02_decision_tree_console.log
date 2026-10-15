@@ -1,0 +1,177 @@
+Loading required package: ggplot2
+Loading required package: lattice
+Type 'citation("pROC")' for a citation.
+
+Attaching package: ‘pROC’
+
+The following objects are masked from ‘package:stats’:
+
+    cov, smooth, var
+
+====================================================================== 
+REVIEW 2 — PHASE C: DECISION TREE CLASSIFICATION
+====================================================================== 
+
+Preprocessed data loaded.
+Training set: 49486 rows | Test set: 21206 rows
+
+
+====================================================================== 
+C1. CART DECISION TREE (GINI IMPURITY)
+====================================================================== 
+
+CP Table (CART/Gini):
+
+Classification tree:
+rpart(formula = Diabetes_binary ~ . - BMI_binned, data = train, 
+    method = "class", parms = list(split = "gini"), control = rpart.control(cp = 0.001))
+
+Variables actually used in tree construction:
+[1] Age      BMI      GenHlth  HighBP   HighChol Income  
+
+Root node error: 24743/49486 = 0.5
+
+n= 49486 
+
+          CP nsplit rel error  xerror      xstd
+1  0.3787334      0   1.00000 1.01706 0.0044946
+2  0.0221881      1   0.62127 0.62127 0.0041604
+3  0.0174191      2   0.59908 0.60373 0.0041273
+4  0.0116127      3   0.58166 0.58166 0.0040830
+5  0.0086085      6   0.54682 0.55119 0.0040171
+6  0.0017985      7   0.53821 0.54124 0.0039944
+7  0.0016166     10   0.53272 0.53979 0.0039910
+8  0.0015560     11   0.53110 0.53866 0.0039883
+9  0.0010306     13   0.52799 0.53454 0.0039786
+10 0.0010000     15   0.52593 0.52924 0.0039660
+
+Best CP (lowest xerror): 0.001000
+
+Pruned tree size: 16 terminal nodes
+
+null device 
+          1 
+Pruned tree plot saved: review2/figures/01_cart_pruned_tree.png
+
+------------------------------------------------------------ 
+Model: CART (Gini) — Pruned 
+------------------------------------------------------------ 
+
+Confusion Matrix:
+          Reference
+Prediction   No  Yes
+       No  7239 2188
+       Yes 3364 8415
+
+Accuracy:  0.7382
+Precision: 0.7144
+Recall:    0.7936
+F1 Score:  0.7519
+AUC:       0.7743
+
+Variable Importance (CART/Gini):
+              HighBP              GenHlth                  Age 
+             3607.13              2739.46              1161.15 
+                 BMI             HighChol               Income 
+             1008.82               859.42               518.49 
+            PhysHlth             DiffWalk         PhysActivity 
+              313.45               243.40               142.54 
+            MentHlth            Education    HvyAlcoholConsump 
+               13.00                 5.78                 4.37 
+         NoDocbcCost        AnyHealthcare               Fruits 
+                2.86                 2.35                 2.32 
+HeartDiseaseorAttack            CholCheck               Stroke 
+                2.02                 1.41                 0.33 
+
+Top 5 variables:
+[1] "HighBP"   "GenHlth"  "Age"      "BMI"      "HighChol"
+
+null device 
+          1 
+ROC curve saved: review2/figures/02_cart_roc_curve.png
+
+====================================================================== 
+C2. DECISION TREE (INFORMATION GAIN)
+====================================================================== 
+
+CP Table (Information Gain):
+
+Classification tree:
+rpart(formula = Diabetes_binary ~ . - BMI_binned, data = train, 
+    method = "class", parms = list(split = "information"), control = rpart.control(cp = 0.001))
+
+Variables actually used in tree construction:
+[1] Age       BMI       CholCheck GenHlth   HighBP    HighChol  Income   
+
+Root node error: 24743/49486 = 0.5
+
+n= 49486 
+
+          CP nsplit rel error  xerror      xstd
+1  0.3787334      0   1.00000 1.00841 0.0044951
+2  0.0221881      1   0.62127 0.62632 0.0041696
+3  0.0174191      2   0.59908 0.60389 0.0041276
+4  0.0112490      3   0.58166 0.58421 0.0040883
+5  0.0086085      6   0.54791 0.55272 0.0040206
+6  0.0024653      7   0.53930 0.54452 0.0040019
+7  0.0016166      9   0.53437 0.53979 0.0039910
+8  0.0013135     10   0.53276 0.53619 0.0039825
+9  0.0010508     12   0.53013 0.53163 0.0039717
+10 0.0010306     15   0.52690 0.53195 0.0039725
+11 0.0010000     17   0.52484 0.53114 0.0039706
+
+Best CP (lowest xerror): 0.001000
+
+Pruned tree size: 18 terminal nodes
+
+null device 
+          1 
+Pruned tree plot saved: review2/figures/03_info_gain_pruned_tree.png
+
+------------------------------------------------------------ 
+Model: Information Gain — Pruned 
+------------------------------------------------------------ 
+
+Confusion Matrix:
+          Reference
+Prediction   No  Yes
+       No  7051 1997
+       Yes 3552 8606
+
+Accuracy:  0.7383
+Precision: 0.7078
+Recall:    0.8117
+F1 Score:  0.7562
+AUC:       0.7750
+
+Variable Importance (Information Gain):
+              HighBP              GenHlth                  Age 
+             3707.27              3089.08              1248.07 
+                 BMI             HighChol               Income 
+             1096.52               862.53               578.78 
+            PhysHlth             DiffWalk         PhysActivity 
+              381.20               300.60               177.78 
+           CholCheck             MentHlth            Education 
+               15.71                13.64                 5.72 
+         NoDocbcCost HeartDiseaseorAttack    HvyAlcoholConsump 
+                4.45                 4.44                 4.01 
+       AnyHealthcare               Fruits                  Sex 
+                3.95                 2.39                 1.05 
+             Veggies               Stroke 
+                0.49                 0.32 
+
+====================================================================== 
+COMPARISON: CART vs INFORMATION GAIN
+====================================================================== 
+
+             Model Best_CP Tree_Size Accuracy Precision Recall     F1    AUC
+1      CART (Gini)   0.001        16   0.7382    0.7144 0.7936 0.7519 0.7743
+2 Information Gain   0.001        18   0.7383    0.7078 0.8117 0.7562 0.7750
+
+Comparison saved to review2/results/decision_tree_comparison.csv
+Model objects saved to review2/results/decision_tree_models.RData
+Output saved to review2/results/02_decision_tree_output.txt
+
+====================================================================== 
+DECISION TREE CLASSIFICATION COMPLETE
+====================================================================== 

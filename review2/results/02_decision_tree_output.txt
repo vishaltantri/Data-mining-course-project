@@ -1,0 +1,63 @@
+REVIEW 2 — DECISION TREE RESULTS
+====================================================================== 
+
+C1. CART (Gini)
+Best CP: 0.001000
+Tree size: 16 terminal nodes
+
+Confusion Matrix:
+          Reference
+Prediction   No  Yes
+       No  7239 2188
+       Yes 3364 8415
+
+Accuracy: 0.7382 | Precision: 0.7144 | Recall: 0.7936 | F1: 0.7519 | AUC: 0.7743
+
+Variable Importance:
+              HighBP              GenHlth                  Age 
+             3607.13              2739.46              1161.15 
+                 BMI             HighChol               Income 
+             1008.82               859.42               518.49 
+            PhysHlth             DiffWalk         PhysActivity 
+              313.45               243.40               142.54 
+            MentHlth            Education    HvyAlcoholConsump 
+               13.00                 5.78                 4.37 
+         NoDocbcCost        AnyHealthcare               Fruits 
+                2.86                 2.35                 2.32 
+HeartDiseaseorAttack            CholCheck               Stroke 
+                2.02                 1.41                 0.33 
+
+
+C2. Information Gain
+Best CP: 0.001000
+Tree size: 18 terminal nodes
+
+Confusion Matrix:
+          Reference
+Prediction   No  Yes
+       No  7051 1997
+       Yes 3552 8606
+
+Accuracy: 0.7383 | Precision: 0.7078 | Recall: 0.8117 | F1: 0.7562 | AUC: 0.7750
+
+Variable Importance:
+              HighBP              GenHlth                  Age 
+             3707.27              3089.08              1248.07 
+                 BMI             HighChol               Income 
+             1096.52               862.53               578.78 
+            PhysHlth             DiffWalk         PhysActivity 
+              381.20               300.60               177.78 
+           CholCheck             MentHlth            Education 
+               15.71                13.64                 5.72 
+         NoDocbcCost HeartDiseaseorAttack    HvyAlcoholConsump 
+                4.45                 4.44                 4.01 
+       AnyHealthcare               Fruits                  Sex 
+                3.95                 2.39                 1.05 
+             Veggies               Stroke 
+                0.49                 0.32 
+
+
+Comparison:
+             Model Best_CP Tree_Size Accuracy Precision Recall     F1    AUC
+1      CART (Gini)   0.001        16   0.7382    0.7144 0.7936 0.7519 0.7743
+2 Information Gain   0.001        18   0.7383    0.7078 0.8117 0.7562 0.7750

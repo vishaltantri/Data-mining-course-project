@@ -1,0 +1,22 @@
+REVIEW 2 — REALISTIC-PREVALENCE EVALUATION
+====================================================================== 
+
+Full dataset: 253680 rows
+Full training: 177577 rows | Full test: 76103 rows
+
+Test set class distribution:
+
+   No   Yes 
+65500 10603 
+
+"Always No" baseline accuracy: 0.8607
+
+Threshold trade-off table:
+ Threshold  Accuracy Precision    Recall        F1
+        NA 0.8606757        NA 0.0000000        NA
+       0.2 0.7626769 0.3165404 0.6068094 0.4160497
+       0.3 0.8435541 0.4172908 0.3100066 0.3557359
+       0.4 0.8648279 0.5647011 0.1300575 0.2114220
+       0.5 0.8651696 0.5907643 0.1049703 0.1782654
+
+AUC: 0.7346

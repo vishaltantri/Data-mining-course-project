@@ -1,0 +1,45 @@
+REVIEW 2 — CLUSTERING RESULTS
+====================================================================== 
+
+Chosen k = 3
+
+Average silhouette width per k (5,000 sample):
+  k avg_silhouette
+1 2         0.1672
+2 3         0.0761
+3 4         0.0834
+4 5         0.0905
+5 6         0.0974
+Best silhouette at k = 2
+
+K-Means cluster sizes:
+
+    1     2     3 
+25527 28761 16404 
+
+
+K-Means Cluster Profiles:
+  Cluster  Size Mean_BMI Pct_HighBP Pct_HighChol Mean_Age_Band Pct_Diabetes
+1       1 25527    27.23       8.81        22.86          6.76        19.05
+2       2 28761    30.30      86.69        69.31          9.88        62.85
+3       3 16404    33.16      77.13        69.45          9.14        75.63
+
+
+Hierarchical cluster sizes:
+hc_clusters
+   1    2    3 
+1588  850   62 
+
+
+Hierarchical Cluster Profiles:
+  Cluster Size Pct_Diabetes Mean_BMI Pct_HighBP
+1       1 1588        62.66    31.13      64.36
+2       2  850        35.18    27.97      44.00
+3       3   62        29.03    29.42      33.87
+
+
+Comparison (K-Means vs Hierarchical):
+K-Means clusters are balanced (25,527 / 28,761 / 16,404); the hierarchical
+cut on 2,500 rows is skewed (1,588 / 850 / 62). Both recover the same
+risk gradient (highest-diabetes cluster = highest BMI and high-BP rate).
+K-Means scales to all 70,692 rows; hclust was limited to a 2,500-row sample.

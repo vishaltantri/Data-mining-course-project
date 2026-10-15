@@ -1,0 +1,70 @@
+Loading required package: ggplot2
+Loading required package: lattice
+Type 'citation("pROC")' for a citation.
+
+Attaching package: ‘pROC’
+
+The following objects are masked from ‘package:stats’:
+
+    cov, smooth, var
+
+====================================================================== 
+REVIEW 2 — PHASE C3: KNN CLASSIFICATION
+====================================================================== 
+
+Preprocessed data loaded.
+Training set: 49486 rows
+Test set:     21206 rows
+
+NOTE: KNN treats all features (including binary 0/1 columns) as
+continuous distances. After z-score scaling, binary features contribute
+proportionally to the Euclidean distance alongside continuous features.
+
+------------------------------------------------------------ 
+Step 1: Choosing k via 5-fold Cross-Validation (sample of 10,000)
+------------------------------------------------------------ 
+
+  k =  1: CV Accuracy = 0.6586
+  k =  3: CV Accuracy = 0.6912
+  k =  5: CV Accuracy = 0.7043
+  k =  7: CV Accuracy = 0.7125
+  k =  9: CV Accuracy = 0.7187
+  k = 11: CV Accuracy = 0.7224
+  k = 13: CV Accuracy = 0.7260
+  k = 15: CV Accuracy = 0.7261
+  k = 17: CV Accuracy = 0.7269
+  k = 19: CV Accuracy = 0.7255
+  k = 21: CV Accuracy = 0.7279
+  k = 23: CV Accuracy = 0.7286
+  k = 25: CV Accuracy = 0.7292
+  k = 27: CV Accuracy = 0.7291
+  k = 29: CV Accuracy = 0.7317
+  k = 31: CV Accuracy = 0.7316
+
+Best k = 29 (CV Accuracy = 0.7317)
+
+null device 
+          1 
+k-vs-accuracy plot saved: review2/figures/04_knn_accuracy_vs_k.png
+
+------------------------------------------------------------ 
+Step 2: Training Final KNN (k = 29) on full training set
+------------------------------------------------------------ 
+
+Confusion Matrix:
+          Reference
+Prediction   No  Yes
+       No  7396 2276
+       Yes 3207 8327
+
+Accuracy:  0.7414
+Precision: 0.7220
+Recall:    0.7853
+F1 Score:  0.7523
+AUC:       0.8140
+
+Output saved to review2/results/03_knn_output.txt
+
+====================================================================== 
+KNN CLASSIFICATION COMPLETE
+====================================================================== 

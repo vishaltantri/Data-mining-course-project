@@ -1,0 +1,104 @@
+Loading required package: ggplot2
+Welcome! Want to learn more? See two factoextra-related books at https://goo.gl/ve3WBa
+Loading required package: lattice
+====================================================================== 
+REVIEW 2 — PHASE F: CLUSTERING
+====================================================================== 
+
+Scaled dataset for clustering: 70692 rows x 21 cols
+Label (Diabetes_binary) is HELD OUT during clustering.
+
+------------------------------------------------------------ 
+Step 1: Elbow Plot (Within-Sum-of-Squares)
+------------------------------------------------------------ 
+
+Warning messages:
+1: did not converge in 10 iterations 
+2: did not converge in 10 iterations 
+null device 
+          1 
+Elbow plot saved: review2/figures/06_elbow_plot.png
+
+------------------------------------------------------------ 
+Step 2: Silhouette Analysis (5,000 sample)
+------------------------------------------------------------ 
+
+Warning message:
+did not converge in 10 iterations 
+null device 
+          1 
+Silhouette plot saved: review2/figures/07_silhouette_plot.png
+
+------------------------------------------------------------ 
+Step 2b: Average silhouette width per k (5,000 sample)
+------------------------------------------------------------ 
+
+  k avg_silhouette
+1 2         0.1672
+2 3         0.0761
+3 4         0.0834
+4 5         0.0905
+5 6         0.0974
+
+Best average silhouette at k = 2 (0.1672)
+
+------------------------------------------------------------ 
+Step 3: K-Means Clustering (k = 3) on all 70692 rows
+------------------------------------------------------------ 
+
+K-Means converged in 4 iterations
+Cluster sizes:
+
+    1     2     3 
+25527 28761 16404 
+
+------------------------------------------------------------ 
+Step 4: Cluster Profiles
+------------------------------------------------------------ 
+
+Cluster Profile Table:
+  Cluster  Size Mean_BMI Pct_HighBP Pct_HighChol Mean_Age_Band Pct_Diabetes
+1       1 25527    27.23       8.81        22.86          6.76        19.05
+2       2 28761    30.30      86.69        69.31          9.88        62.85
+3       3 16404    33.16      77.13        69.45          9.14        75.63
+
+null device 
+          1 
+Cluster plot saved: review2/figures/08_kmeans_clusters.png
+
+------------------------------------------------------------ 
+Step 5: Hierarchical Clustering (sample of 2,500)
+------------------------------------------------------------ 
+
+Hierarchical cluster sizes (cutree k = 3 ):
+hc_clusters
+   1    2    3 
+1588  850   62 
+
+null device 
+          1 
+Dendrogram saved: review2/figures/09_dendrogram.png
+
+Hierarchical Cluster Profiles:
+  Cluster Size Pct_Diabetes Mean_BMI Pct_HighBP
+1       1 1588        62.66    31.13      64.36
+2       2  850        35.18    27.97      44.00
+3       3   62        29.03    29.42      33.87
+
+------------------------------------------------------------ 
+K-Means vs Hierarchical Comparison (2-3 lines):
+------------------------------------------------------------ 
+
+1. K-Means clusters are balanced (25,527 / 28,761 / 16,404 rows); the
+   hierarchical cut on the 2,500-row sample is much more skewed
+   (1,588 / 850 / 62 rows).
+2. Both methods recover the same risk gradient: the cluster with the
+   highest diabetes rate also has the highest BMI and high-BP rate.
+3. K-Means handled all 70,692 rows in seconds, while hclust needs an
+   O(n^2) distance matrix, which is why it ran on a sample only.
+
+Output saved to review2/results/06_clustering_output.txt
+
+====================================================================== 
+CLUSTERING COMPLETE
+====================================================================== 

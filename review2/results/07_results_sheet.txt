@@ -1,0 +1,64 @@
+REVIEW 2 — COMPLETE RESULTS SHEET
+====================================================================== 
+Generated: 2026-10-15 20:13:22.694836
+
+10.1 SETUP
+  Train / test rows (balanced): 49486 / 21206
+  Seed: 42
+  Chosen cp (CART): 0.001000
+  Chosen k (KNN):   29
+
+10.2 MODEL COMPARISON (BALANCED TEST SET)
+                               Model Accuracy Precision Recall     F1    AUC
+             Decision Tree, CART (R)   0.7382    0.7144 0.7936 0.7519 0.7743
+ Decision Tree, Information Gain (R)   0.7383    0.7078 0.8117 0.7562 0.7750
+                             KNN (R)   0.7414    0.7220 0.7853 0.7523 0.8140
+              J48 (WEKA, 10-fold CV)   0.7213    0.7120 0.7420 0.7270 0.7460
+      Naive Bayes (WEKA, 10-fold CV)   0.7074    0.7420 0.6360 0.6850 0.7970
+  [WEKA J48 and Naive Bayes: fill from WEKA screenshots]
+
+10.3 REALISTIC PREVALENCE (FULL-FILE TEST SET)
+ Threshold  Accuracy Precision    Recall        F1
+        NA 0.8606757        NA 0.0000000        NA
+       0.2 0.7626769 0.3165404 0.6068094 0.4160497
+       0.3 0.8435541 0.4172908 0.3100066 0.3557359
+       0.4 0.8648279 0.5647011 0.1300575 0.2114220
+       0.5 0.8651696 0.5907643 0.1049703 0.1782654
+
+10.4 ASSOCIATION RULES (TOP 5)
+ Rule_No
+       1
+       2
+       3
+       4
+       5
+                                                                        Rule
+       {HighBP=1,HeartDiseaseorAttack=1,DiffWalk=1} => {Diabetes_binary=Yes}
+         {HighChol=1,GenHlth=Fair,BMI_binned=Obese} => {Diabetes_binary=Yes}
+ {HighBP=1,HeartDiseaseorAttack=1,BMI_binned=Obese} => {Diabetes_binary=Yes}
+           {HighChol=1,DiffWalk=1,BMI_binned=Obese} => {Diabetes_binary=Yes}
+           {HighBP=1,GenHlth=Fair,BMI_binned=Obese} => {Diabetes_binary=Yes}
+ Support Confidence   Lift
+  0.0534     0.8513 1.7027
+  0.0616     0.8484 1.6969
+  0.0559     0.8463 1.6926
+  0.0904     0.8445 1.6890
+  0.0716     0.8430 1.6860
+
+10.5 CLUSTERING
+ Cluster  Size Mean_BMI Pct_HighBP Pct_HighChol Mean_Age_Band Pct_Diabetes
+       1 25527    27.23       8.81        22.86          6.76        19.05
+       2 28761    30.30      86.69        69.31          9.88        62.85
+       3 16404    33.16      77.13        69.45          9.14        75.63
+
+WRITE-UP
+Best model: Decision Tree, Information Gain (R) (F1=0.7562, AUC=0.7750)
+All three R models ~73-74% accuracy. KNN best AUC.
+Realistic-prevalence: recall drops to ~11% at 0.5 threshold; ~61% at 0.2.
+Association rules: HighBP+HighChol+Obese+Fair/Poor health -> diabetes (lift ~1.7).
+
+LIMITATIONS
+- Balanced sample ≠ population prevalence
+- Prediabetes coded 0
+- Self-reported, cross-sectional, 2015 only
+- Association ≠ causation

@@ -1,0 +1,141 @@
+also installing the dependencies ‘fs’, ‘sass’, ‘bslib’, ‘rmarkdown’, ‘htmlwidgets’, ‘showtextdb’, ‘DT’, ‘showtext’, ‘sysfonts’, ‘FactoMineR’
+
+* installing *source* package ‘fs’ ...
+** this is package ‘fs’ version ‘2.1.0’
+** package ‘fs’ successfully unpacked and MD5 sums checked
+** using staged installation
+Package libuv was not found in the pkg-config search path.
+Perhaps you should add the directory containing `libuv.pc'
+to the PKG_CONFIG_PATH environment variable
+Package 'libuv' not found
+Using PKG_CFLAGS=
+Using PKG_LIBS=-luv
+--------------------------- [CONFIGURE] --------------------------------
+Configuration failed because libuv was not found. Try installing:
+ * deb: libuv1-dev (Debian, Ubuntu, etc)
+ * rpm: libuv-devel (Fedora, EPEL)
+ * brew: libuv (OSX)
+Alternatively set environment variable USE_BUNDLED_LIBUV=1 to build a static
+version of libuv that is included with this package.
+-------------------------- [ERROR MESSAGE] ---------------------------
+<stdin>:1:10: fatal error: uv.h: No such file or directory
+compilation terminated.
+--------------------------------------------------------------------
+ERROR: configuration failed for package ‘fs’
+* removing ‘/home/vct/R/x86_64-pc-linux-gnu-library/4.5/fs’
+* installing *source* package ‘sysfonts’ ...
+** this is package ‘sysfonts’ version ‘0.8.9’
+** package ‘sysfonts’ successfully unpacked and MD5 sums checked
+** using staged installation
+checking for gcc... gcc
+checking whether the C compiler works... yes
+checking for C compiler default output file name... a.out
+checking for suffix of executables... 
+checking whether we are cross compiling... no
+checking for suffix of object files... o
+checking whether we are using the GNU C compiler... yes
+checking whether gcc accepts -g... yes
+checking for gcc option to accept ISO C89... none needed
+checking for pkg-config... /usr/bin/pkg-config
+checking whether pkg-config could find zlib... yes
+checking whether pkg-config could find libpng... yes
+checking whether pkg-config could find freetype2... no
+checking for freetype-config... no
+
+****************************************************
+Error: freetype-config not found.
+Please install FreeType with freetype-config script.
+If you have not installed FreeType, you can
+download the source code from http://freetype.org/
+
+In Debian/Ubuntu-like systems, you can use
+  "sudo apt-get install libfreetype6-dev"
+to install FreeType
+
+For rpm-based systems, try
+  "sudo yum install freetype-devel"
+****************************************************
+
+ERROR: configuration failed for package ‘sysfonts’
+* removing ‘/home/vct/R/x86_64-pc-linux-gnu-library/4.5/sysfonts’
+ERROR: failed to lock directory ‘/home/vct/R/x86_64-pc-linux-gnu-library/4.5’ for modifying
+Try removing ‘/home/vct/R/x86_64-pc-linux-gnu-library/4.5/00LOCK-caret’
+Warning message:
+In install.packages(c("caret", "factoextra"), lib = Sys.getenv("R_LIBS_USER"),  :
+  installation of 12 packages failed:
+  ‘fs’, ‘sysfonts’, ‘caret’, ‘sass’, ‘showtextdb’, ‘bslib’, ‘showtext’, ‘rmarkdown’, ‘htmlwidgets’, ‘DT’, ‘FactoMineR’, ‘factoextra’
+INSTALL_DONE
+  [1] "abind"          "ade4"           "arules"         "askpass"       
+  [5] "backports"      "base64enc"      "bbotk"          "BH"            
+  [9] "bit"            "bit64"          "bitops"         "blob"          
+ [13] "BradleyTerry2"  "brglm"          "brio"           "broom"         
+ [17] "ca"             "cachem"         "callr"          "car"           
+ [21] "carData"        "caTools"        "checkmate"      "class"         
+ [25] "classInt"       "cli"            "clipr"          "clock"         
+ [29] "coin"           "colorspace"     "combinat"       "commonmark"    
+ [33] "corrplot"       "cowplot"        "cpp11"          "crayon"        
+ [37] "crosstalk"      "Cubist"         "data.table"     "DBI"           
+ [41] "dendextend"     "DEoptimR"       "Deriv"          "desc"          
+ [45] "diagram"        "diffobj"        "digest"         "doBy"          
+ [49] "dplyr"          "dqrng"          "dtt"            "e1071"         
+ [53] "earth"          "ellipse"        "emmeans"        "english"       
+ [57] "estimability"   "evaluate"       "farver"         "fastICA"       
+ [61] "fastmap"        "flashClust"     "FNN"            "fontawesome"   
+ [65] "forcats"        "foreach"        "forecast"       "Formula"       
+ [69] "fracdiff"       "future"         "future.apply"   "gam"           
+ [73] "generics"       "ggplot2"        "ggpubr"         "ggrepel"       
+ [77] "ggsci"          "ggsignif"       "globals"        "glue"          
+ [81] "gower"          "gplots"         "gridExtra"      "gtable"        
+ [85] "gtools"         "hardhat"        "haven"          "here"          
+ [89] "highr"          "hms"            "htmltools"      "httpuv"        
+ [93] "igraph"         "ipred"          "irlba"          "isoband"       
+ [97] "iterators"      "jquerylib"      "jsonlite"       "kernlab"       
+[101] "knitr"          "labeling"       "labelled"       "laeken"        
+[105] "later"          "lava"           "lazyeval"       "leaps"         
+[109] "lexicon"        "lgr"            "libcoin"        "lifecycle"     
+[113] "listenv"        "lme4"           "lmtest"         "lubridate"     
+[117] "magrittr"       "MatrixModels"   "matrixStats"    "mclust"        
+[121] "mda"            "memoise"        "mgsub"          "mime"          
+[125] "minqa"          "mirai"          "mlbench"        "MLmetrics"     
+[129] "mlr3"           "mlr3learners"   "mlr3measures"   "mlr3misc"      
+[133] "mlr3pipelines"  "mlr3tuning"     "modelenv"       "ModelMetrics"  
+[137] "modelr"         "modeltools"     "moocore"        "multcomp"      
+[141] "multcompView"   "mvtnorm"        "nanonext"       "nloptr"        
+[145] "NLP"            "numDeriv"       "openssl"        "otel"          
+[149] "palmerpenguins" "pamr"           "paradox"        "parallelly"    
+[153] "parsnip"        "party"          "pbkrtest"       "pillar"        
+[157] "pixmap"         "pkgbuild"       "pkgconfig"      "plotmo"        
+[161] "plotrix"        "pls"            "plyr"           "png"           
+[165] "polynom"        "praise"         "prettyunits"    "pROC"          
+[169] "processx"       "prodlim"        "profileModel"   "progress"      
+[173] "progressr"      "promises"       "proxy"          "PRROC"         
+[177] "ps"             "purrr"          "qdapRegex"      "quantreg"      
+[181] "qvcalc"         "R.cache"        "R.methodsS3"    "R.oo"          
+[185] "R.utils"        "R6"             "randomForest"   "ranger"        
+[189] "RANN"           "rappdirs"       "rbibutils"      "RColorBrewer"  
+[193] "Rcpp"           "RcppAnnoy"      "RcppArmadillo"  "RcppEigen"     
+[197] "RcppProgress"   "RcppTOML"       "Rdpack"         "readr"         
+[201] "recipes"        "reformulas"     "reshape2"       "reticulate"    
+[205] "rex"            "rlang"          "robustbase"     "ROCR"          
+[209] "ROSE"           "rpart.plot"     "rprojroot"      "RSpectra"      
+[213] "RSQLite"        "rstatix"        "rstudioapi"     "Rtsne"         
+[217] "S7"             "sandwich"       "scales"         "scatterplot3d" 
+[221] "shape"          "sitmo"          "slam"           "sourcetools"   
+[225] "sp"             "SparseM"        "sparsevctrs"    "spls"          
+[229] "SQUAREM"        "stringi"        "stringr"        "strucchange"   
+[233] "styler"         "superpc"        "sys"            "syuzhet"       
+[237] "textclean"      "textshape"      "TH.data"        "themis"        
+[241] "tibble"         "tidyr"          "tidyselect"     "timechange"    
+[245] "timeDate"       "tinytex"        "tree"           "tzdb"          
+[249] "umap"           "urca"           "utf8"           "uuid"          
+[253] "uwot"           "vcd"            "vctrs"          "VIM"           
+[257] "viridis"        "viridisLite"    "vroom"          "waldo"         
+[261] "withr"          "workflows"      "xfun"           "xgboost"       
+[265] "xtable"         "yaml"           "zoo"            "base"          
+[269] "boot"           "class"          "cluster"        "codetools"     
+[273] "compiler"       "datasets"       "foreign"        "graphics"      
+[277] "grDevices"      "grid"           "KernSmooth"     "lattice"       
+[281] "MASS"           "Matrix"         "methods"        "mgcv"          
+[285] "nlme"           "nnet"           "parallel"       "rpart"         
+[289] "spatial"        "splines"        "stats"          "stats4"        
+[293] "survival"       "tcltk"          "tools"          "utils"         

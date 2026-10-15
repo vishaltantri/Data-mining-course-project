@@ -1,0 +1,9 @@
+"Rule_No","Rule","Support","Confidence","Lift"
+1,"{HighBP=1,HeartDiseaseorAttack=1,DiffWalk=1} => {Diabetes_binary=Yes}",0.0534,0.8513,1.7027
+2,"{HighChol=1,GenHlth=Fair,BMI_binned=Obese} => {Diabetes_binary=Yes}",0.0616,0.8484,1.6969
+3,"{HighBP=1,HeartDiseaseorAttack=1,BMI_binned=Obese} => {Diabetes_binary=Yes}",0.0559,0.8463,1.6926
+4,"{HighChol=1,DiffWalk=1,BMI_binned=Obese} => {Diabetes_binary=Yes}",0.0904,0.8445,1.689
+5,"{HighBP=1,GenHlth=Fair,BMI_binned=Obese} => {Diabetes_binary=Yes}",0.0716,0.843,1.686
+6,"{HighBP=1,HvyAlcoholConsump=0,GenHlth=Poor} => {Diabetes_binary=Yes}",0.053,0.8396,1.6791
+7,"{HeartDiseaseorAttack=1,AnyHealthcare=1,BMI_binned=Obese} => {Diabetes_binary=Yes}",0.0615,0.8367,1.6733
+8,"{HeartDiseaseorAttack=1,HvyAlcoholConsump=0,BMI_binned=Obese} => {Diabetes_binary=Yes}",0.0628,0.8365,1.673

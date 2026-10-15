@@ -1,0 +1,69 @@
+Loading required package: ggplot2
+Loading required package: lattice
+Type 'citation("pROC")' for a citation.
+
+Attaching package: ‘pROC’
+
+The following objects are masked from ‘package:stats’:
+
+    cov, smooth, var
+
+====================================================================== 
+REVIEW 2 — PHASE D: REALISTIC-PREVALENCE EVALUATION
+====================================================================== 
+
+Full dataset loaded: 253680 rows x 22 columns
+Full dataset class distribution:
+
+    No    Yes 
+218334  35346 
+  Proportions: 0.8607 0.1393 
+
+Full-file stratified 70/30 split:
+  Training set: 177577 rows
+  Test set:     76103 rows
+
+Full-file test set class distribution:
+
+   No   Yes 
+65500 10603 
+  Proportions: 0.8607 0.1393 
+
+------------------------------------------------------------ 
+Training CART decision tree on full-file training set...
+------------------------------------------------------------ 
+
+Best CP: 0.001000
+Tree size: 9 terminal nodes
+
+Evaluation at threshold = 0.5:
+          Reference
+Prediction    No   Yes
+       No  64729  9490
+       Yes   771  1113
+
+Accuracy: 0.8652 | Precision: 0.5908 | Recall: 0.1050 | F1: 0.1783 | AUC: 0.7346
+
+"Always No" baseline accuracy: 0.8607 (86.1%)
+
+------------------------------------------------------------ 
+Threshold Trade-Off Analysis
+------------------------------------------------------------ 
+
+  Threshold = 0.2: Acc=0.7627  Prec=0.3165  Rec=0.6068  F1=0.4160
+  Threshold = 0.3: Acc=0.8436  Prec=0.4173  Rec=0.3100  F1=0.3557
+  Threshold = 0.4: Acc=0.8648  Prec=0.5647  Rec=0.1301  F1=0.2114
+  Threshold = 0.5: Acc=0.8652  Prec=0.5908  Rec=0.1050  F1=0.1783
+
+"Always No" baseline: Acc=0.8607  Prec=NA  Rec=0  F1=NA
+
+Threshold table saved to review2/results/threshold_tradeoff.csv
+
+null device 
+          1 
+ROC curve saved: review2/figures/05_realistic_roc_curve.png
+Output saved to review2/results/04_realistic_eval_output.txt
+
+====================================================================== 
+REALISTIC-PREVALENCE EVALUATION COMPLETE
+====================================================================== 

@@ -1,0 +1,101 @@
+====================================================================== 
+REVIEW 2 — PHASE H: FINAL COMPARISON AND WRITE-UP
+====================================================================== 
+
+All model results loaded.
+
+====================================================================== 
+10.1 SETUP
+------------------------------------------------------------ 
+Train rows (balanced): 49486
+Test rows (balanced):  21206
+Seed: 42
+Chosen cp (CART):    0.001000
+Chosen cp (InfoGain): 0.001000
+Chosen k (KNN):      29
+
+====================================================================== 
+10.2 MODEL COMPARISON (BALANCED TEST SET)
+------------------------------------------------------------ 
+
+                               Model Accuracy Precision Recall     F1    AUC
+             Decision Tree, CART (R)   0.7382    0.7144 0.7936 0.7519 0.7743
+ Decision Tree, Information Gain (R)   0.7383    0.7078 0.8117 0.7562 0.7750
+                             KNN (R)   0.7414    0.7220 0.7853 0.7523 0.8140
+              J48 (WEKA, 10-fold CV)   0.7213    0.7120 0.7420 0.7270 0.7460
+      Naive Bayes (WEKA, 10-fold CV)   0.7074    0.7420 0.6360 0.6850 0.7970
+
+====================================================================== 
+10.3 REALISTIC PREVALENCE (FULL-FILE TEST SET)
+------------------------------------------------------------ 
+
+ Threshold  Accuracy Precision    Recall        F1
+        NA 0.8606757        NA 0.0000000        NA
+       0.2 0.7626769 0.3165404 0.6068094 0.4160497
+       0.3 0.8435541 0.4172908 0.3100066 0.3557359
+       0.4 0.8648279 0.5647011 0.1300575 0.2114220
+       0.5 0.8651696 0.5907643 0.1049703 0.1782654
+
+====================================================================== 
+10.4 ASSOCIATION RULES (TOP 5)
+------------------------------------------------------------ 
+
+ Rule_No
+       1
+       2
+       3
+       4
+       5
+                                                                        Rule
+       {HighBP=1,HeartDiseaseorAttack=1,DiffWalk=1} => {Diabetes_binary=Yes}
+         {HighChol=1,GenHlth=Fair,BMI_binned=Obese} => {Diabetes_binary=Yes}
+ {HighBP=1,HeartDiseaseorAttack=1,BMI_binned=Obese} => {Diabetes_binary=Yes}
+           {HighChol=1,DiffWalk=1,BMI_binned=Obese} => {Diabetes_binary=Yes}
+           {HighBP=1,GenHlth=Fair,BMI_binned=Obese} => {Diabetes_binary=Yes}
+ Support Confidence   Lift
+  0.0534     0.8513 1.7027
+  0.0616     0.8484 1.6969
+  0.0559     0.8463 1.6926
+  0.0904     0.8445 1.6890
+  0.0716     0.8430 1.6860
+
+====================================================================== 
+10.5 CLUSTERING
+------------------------------------------------------------ 
+
+ Cluster  Size Mean_BMI Pct_HighBP Pct_HighChol Mean_Age_Band Pct_Diabetes
+       1 25527    27.23       8.81        22.86          6.76        19.05
+       2 28761    30.30      86.69        69.31          9.88        62.85
+       3 16404    33.16      77.13        69.45          9.14        75.63
+
+====================================================================== 
+WRITE-UP (3-5 LINES)
+------------------------------------------------------------ 
+
+1. Best model: Decision Tree, Information Gain (R) (F1 = 0.7562, AUC = 0.7750 on balanced test set).
+2. All three R models perform similarly (~73-74% accuracy), suggesting
+   that the signal in these 21 survey features has a natural ceiling.
+   KNN achieved the highest AUC, likely because it captures non-linear
+   local patterns missed by single decision trees.
+3. On realistic-prevalence data (14% diabetes), recall at the default
+   0.5 threshold drops below 11%, because the model rarely predicts the
+   rare class. Lowering the threshold to 0.2 raises recall to ~61% but
+   precision falls to ~32%. A screening tool must accept this trade-off.
+4. Association rules confirm that High BP + High Cholesterol + Obesity
+   + Fair/Poor health = very strong diabetes signal (lift ~1.7).
+
+------------------------------------------------------------ 
+LIMITATIONS
+------------------------------------------------------------ 
+
+- The balanced 50/50 sample does not reflect population prevalence.
+- Prediabetes (4,631 respondents) is coded 0 in the binary target.
+- All data is self-reported from a single cross-sectional survey (2015).
+- Associations do not imply causation.
+
+Results sheet saved to review2/results/07_results_sheet.txt
+Model comparison CSV saved to review2/results/model_comparison_all.csv
+
+====================================================================== 
+FINAL COMPARISON AND WRITE-UP COMPLETE
+====================================================================== 

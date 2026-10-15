@@ -1,0 +1,105 @@
+REVIEW 2 — APRIORI ASSOCIATION RULES
+====================================================================== 
+
+Grid search results:
+  Support Confidence NumRules
+1    0.05        0.6    16852
+2    0.05        0.7     7424
+3    0.05        0.8     1002
+4    0.10        0.6     3752
+5    0.10        0.7     1164
+6    0.10        0.8       65
+7    0.20        0.6      328
+8    0.20        0.7       49
+9    0.20        0.8        0
+
+
+Top rules (sorted by lift):
+     lhs                       rhs                      support confidence   coverage     lift count
+[1]  {HighBP=1,                                                                                     
+      HighChol=1,                                                                                   
+      CholCheck=1,                                                                                  
+      HvyAlcoholConsump=0,                                                                          
+      GenHlth=Fair,                                                                                 
+      BMI_binned=Obese}     => {Diabetes_binary=Yes} 0.05195779  0.8741076 0.05944096 1.748215  3673
+[2]  {HighBP=1,                                                                                     
+      HighChol=1,                                                                                   
+      CholCheck=1,                                                                                  
+      AnyHealthcare=1,                                                                              
+      GenHlth=Fair,                                                                                 
+      BMI_binned=Obese}     => {Diabetes_binary=Yes} 0.05075539  0.8738432 0.05808295 1.747686  3588
+[3]  {HighBP=1,                                                                                     
+      HighChol=1,                                                                                   
+      HvyAlcoholConsump=0,                                                                          
+      GenHlth=Fair,                                                                                 
+      BMI_binned=Obese}     => {Diabetes_binary=Yes} 0.05225485  0.8730797 0.05985119 1.746159  3694
+[4]  {HighBP=1,                                                                                     
+      HighChol=1,                                                                                   
+      AnyHealthcare=1,                                                                              
+      GenHlth=Fair,                                                                                 
+      BMI_binned=Obese}     => {Diabetes_binary=Yes} 0.05096758  0.8726084 0.05840831 1.745217  3603
+[5]  {HighBP=1,                                                                                     
+      HighChol=1,                                                                                   
+      HvyAlcoholConsump=0,                                                                          
+      NoDocbcCost=0,                                                                                
+      DiffWalk=1,                                                                                   
+      BMI_binned=Obese}     => {Diabetes_binary=Yes} 0.06556612  0.8714044 0.07524189 1.742809  4635
+[6]  {HighBP=1,                                                                                     
+      HighChol=1,                                                                                   
+      HvyAlcoholConsump=0,                                                                          
+      AnyHealthcare=1,                                                                              
+      DiffWalk=1,                                                                                   
+      BMI_binned=Obese}     => {Diabetes_binary=Yes} 0.07535506  0.8698563 0.08662932 1.739713  5327
+[7]  {HighBP=1,                                                                                     
+      HighChol=1,                                                                                   
+      CholCheck=1,                                                                                  
+      GenHlth=Fair,                                                                                 
+      BMI_binned=Obese}     => {Diabetes_binary=Yes} 0.05297629  0.8691112 0.06095456 1.738222  3745
+[8]  {HighBP=1,                                                                                     
+      HighChol=1,                                                                                   
+      CholCheck=1,                                                                                  
+      HvyAlcoholConsump=0,                                                                          
+      DiffWalk=1,                                                                                   
+      BMI_binned=Obese}     => {Diabetes_binary=Yes} 0.07804278  0.8690926 0.08979800 1.738185  5517
+[9]  {HighBP=1,                                                                                     
+      HighChol=1,                                                                                   
+      CholCheck=1,                                                                                  
+      NoDocbcCost=0,                                                                                
+      DiffWalk=1,                                                                                   
+      BMI_binned=Obese}     => {Diabetes_binary=Yes} 0.06617439  0.8683869 0.07620381 1.736774  4678
+[10] {HighBP=1,                                                                                     
+      HighChol=1,                                                                                   
+      GenHlth=Fair,                                                                                 
+      BMI_binned=Obese}     => {Diabetes_binary=Yes} 0.05328750  0.8679724 0.06139309 1.735945  3767
+
+
+Top rules table:
+  Rule_No
+1 1      
+2 2      
+3 3      
+4 4      
+5 5      
+6 6      
+7 7      
+8 8      
+  Rule                                                                                  
+1 {HighBP=1,HeartDiseaseorAttack=1,DiffWalk=1} => {Diabetes_binary=Yes}                 
+2 {HighChol=1,GenHlth=Fair,BMI_binned=Obese} => {Diabetes_binary=Yes}                   
+3 {HighBP=1,HeartDiseaseorAttack=1,BMI_binned=Obese} => {Diabetes_binary=Yes}           
+4 {HighChol=1,DiffWalk=1,BMI_binned=Obese} => {Diabetes_binary=Yes}                     
+5 {HighBP=1,GenHlth=Fair,BMI_binned=Obese} => {Diabetes_binary=Yes}                     
+6 {HighBP=1,HvyAlcoholConsump=0,GenHlth=Poor} => {Diabetes_binary=Yes}                  
+7 {HeartDiseaseorAttack=1,AnyHealthcare=1,BMI_binned=Obese} => {Diabetes_binary=Yes}    
+8 {HeartDiseaseorAttack=1,HvyAlcoholConsump=0,BMI_binned=Obese} => {Diabetes_binary=Yes}
+  Support Confidence Lift  
+1 0.0534  0.8513     1.7027
+2 0.0616  0.8484     1.6969
+3 0.0559  0.8463     1.6926
+4 0.0904  0.8445     1.6890
+5 0.0716  0.8430     1.6860
+6 0.0530  0.8396     1.6791
+7 0.0615  0.8367     1.6733
+8 0.0628  0.8365     1.6730
+
+Note: Support values reflect the 50/50 balanced sample design.

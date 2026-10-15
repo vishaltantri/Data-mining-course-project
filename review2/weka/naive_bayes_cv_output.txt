@@ -1,0 +1,196 @@
+
+=== Classifier model (full training set) ===
+
+Naive Bayes Classifier
+
+                         Class
+Attribute                   NO     YES
+                         (0.5)   (0.5)
+=======================================
+HighBP
+  mean                   0.3742  0.7527
+  std. dev.              0.4839  0.4315
+  weight sum              35346   35346
+  precision                   1       1
+
+HighChol
+  mean                   0.3813  0.6701
+  std. dev.              0.4857  0.4702
+  weight sum              35346   35346
+  precision                   1       1
+
+CholCheck
+  mean                   0.9573  0.9932
+  std. dev.              0.2021  0.1667
+  weight sum              35346   35346
+  precision                   1       1
+
+BMI
+  mean                  27.7676 31.9547
+  std. dev.              6.2299  7.3659
+  weight sum              35346   35346
+  precision              1.0886  1.0886
+
+Smoker
+  mean                   0.4323  0.5182
+  std. dev.              0.4954  0.4997
+  weight sum              35346   35346
+  precision                   1       1
+
+Stroke
+  mean                   0.0319  0.0925
+  std. dev.              0.1757  0.2897
+  weight sum              35346   35346
+  precision                   1       1
+
+HeartDiseaseorAttack
+  mean                   0.0727  0.2229
+  std. dev.              0.2597  0.4162
+  weight sum              35346   35346
+  precision                   1       1
+
+PhysActivity
+  mean                   0.7755  0.6305
+  std. dev.              0.4172  0.4827
+  weight sum              35346   35346
+  precision                   1       1
+
+Fruits
+  mean                   0.6381  0.5854
+  std. dev.              0.4805  0.4926
+  weight sum              35346   35346
+  precision                   1       1
+
+Veggies
+  mean                   0.8211  0.7564
+  std. dev.              0.3832  0.4292
+  weight sum              35346   35346
+  precision                   1       1
+
+HvyAlcoholConsump
+  mean                   0.0619  0.0235
+  std. dev.               0.241  0.1667
+  weight sum              35346   35346
+  precision                   1       1
+
+AnyHealthcare
+  mean                   0.9501  0.9598
+  std. dev.              0.2176  0.1965
+  weight sum              35346   35346
+  precision                   1       1
+
+NoDocbcCost
+  mean                    0.082  0.1059
+  std. dev.              0.2743  0.3077
+  weight sum              35346   35346
+  precision                   1       1
+
+GenHlth
+  mean                   2.3832   3.291
+  std. dev.              1.0237  1.0099
+  weight sum              35346   35346
+  precision                   1       1
+
+MentHlth
+  mean                   3.0423  4.4618
+  std. dev.              7.2083  8.9476
+  weight sum              35346   35346
+  precision                   1       1
+
+PhysHlth
+  mean                   3.6664  7.9545
+  std. dev.              8.0982 11.3013
+  weight sum              35346   35346
+  precision                   1       1
+
+DiffWalk
+  mean                   0.1342  0.3712
+  std. dev.              0.3409  0.4831
+  weight sum              35346   35346
+  precision                   1       1
+
+Sex
+  mean                   0.4349  0.4791
+  std. dev.              0.4957  0.4996
+  weight sum              35346   35346
+  precision                   1       1
+
+Age
+  mean                   7.7891  9.3791
+  std. dev.              3.0944  2.3302
+  weight sum              35346   35346
+  precision                   1       1
+
+Education
+  mean                   5.0964  4.7455
+  std. dev.              0.9652  1.0606
+  weight sum              35346   35346
+  precision                   1       1
+
+Income
+  mean                   6.1865  5.2101
+  std. dev.              2.0174  2.2173
+  weight sum              35346   35346
+  precision                   1       1
+
+
+
+Time taken to build model: 0.25 seconds
+
+Time taken to test model on training data: 0.39 seconds
+
+=== Error on training data ===
+
+Correctly Classified Instances       50005               70.7364 %
+Incorrectly Classified Instances     20687               29.2636 %
+Kappa statistic                          0.4147
+Mean absolute error                      0.3052
+Root mean squared error                  0.4747
+Relative absolute error                 61.0341 %
+Root relative squared error             94.931  %
+Total Number of Instances            70692     
+
+
+=== Detailed Accuracy By Class ===
+
+                 TP Rate  FP Rate  Precision  Recall   F-Measure  MCC      ROC Area  PRC Area  Class
+                 0.779    0.364    0.681      0.779    0.727      0.419    0.797     0.817     NO
+                 0.636    0.221    0.742      0.636    0.685      0.419    0.797     0.756     YES
+Weighted Avg.    0.707    0.293    0.712      0.707    0.706      0.419    0.797     0.786     
+
+
+=== Confusion Matrix ===
+
+     a     b   <-- classified as
+ 27527  7819 |     a = NO
+ 12868 22478 |     b = YES
+
+Time taken to perform cross-validation: 1.2 seconds
+
+
+=== Stratified cross-validation ===
+
+Correctly Classified Instances       50009               70.7421 %
+Incorrectly Classified Instances     20683               29.2579 %
+Kappa statistic                          0.4148
+Mean absolute error                      0.3052
+Root mean squared error                  0.4748
+Relative absolute error                 61.0436 %
+Root relative squared error             94.9514 %
+Total Number of Instances            70692     
+
+
+=== Detailed Accuracy By Class ===
+
+                 TP Rate  FP Rate  Precision  Recall   F-Measure  MCC      ROC Area  PRC Area  Class
+                 0.779    0.364    0.681      0.779    0.727      0.419    0.797     0.817     NO
+                 0.636    0.221    0.742      0.636    0.685      0.419    0.797     0.755     YES
+Weighted Avg.    0.707    0.293    0.712      0.707    0.706      0.419    0.797     0.786     
+
+
+=== Confusion Matrix ===
+
+     a     b   <-- classified as
+ 27541  7805 |     a = NO
+ 12878 22468 |     b = YES
+
