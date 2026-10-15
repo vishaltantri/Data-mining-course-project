@@ -1,0 +1,34 @@
+{
+  "seed": 42,
+  "train_rows": 49484,
+  "test_rows": 21208,
+  "balanced": {
+    "Logistic Regression": {
+      "accuracy": 0.7485,
+      "precision": 0.7376,
+      "recall": 0.7714,
+      "f1": 0.7541,
+      "auc": 0.824
+    },
+    "Decision Tree": {
+      "accuracy": 0.6548,
+      "precision": 0.6567,
+      "recall": 0.649,
+      "f1": 0.6528,
+      "auc": 0.6542
+    },
+    "KNN (k=15)": {
+      "accuracy": 0.7303,
+      "precision": 0.7129,
+      "recall": 0.7714,
+      "f1": 0.741,
+      "auc": 0.8007
+    }
+  },
+  "full_file": {
+    "rows": 253680,
+    "prevalence": 0.1393,
+    "always_no_accuracy": 0.8607
+  },
+  "note": "Quick feasibility check only; Review 2 reported numbers come from the R scripts in review2/scripts/."
+}

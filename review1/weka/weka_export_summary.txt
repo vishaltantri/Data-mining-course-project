@@ -1,0 +1,38 @@
+WEKA EXPORT SUMMARY
+============================================================
+Source database : review1/diabetes_dw.db
+Source CSV      : diabetes_binary_5050split_health_indicators_BRFSS2015.csv
+Instances       : 70692
+Attributes      : 22 (class = Diabetes_binary, last)
+Class NO        : 35346 (50.00%)
+Class YES       : 35346 (50.00%)
+Cell mismatches vs source CSV: 0
+
+Attributes (in ARFF order):
+   1. HighBP
+   2. HighChol
+   3. CholCheck
+   4. BMI
+   5. Smoker
+   6. Stroke
+   7. HeartDiseaseorAttack
+   8. PhysActivity
+   9. Fruits
+  10. Veggies
+  11. HvyAlcoholConsump
+  12. AnyHealthcare
+  13. NoDocbcCost
+  14. GenHlth
+  15. MentHlth
+  16. PhysHlth
+  17. DiffWalk
+  18. Sex
+  19. Age
+  20. Education
+  21. Income
+  22. Diabetes_binary
+
+Files written:
+  diabetes_dw_export.arff
+  diabetes_dw_export.csv
+  weka_export_summary.txt
