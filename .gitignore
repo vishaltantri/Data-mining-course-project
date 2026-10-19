@@ -13,6 +13,7 @@ __pycache__/
 venv/
 .venv/
 env/
+.streamlit/secrets.toml
 
 # IDE / OS
 .DS_Store
