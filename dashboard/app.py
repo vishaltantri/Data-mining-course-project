@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -12,15 +13,21 @@ from scipy.spatial import ConvexHull, QhullError
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.metrics import roc_curve, precision_recall_curve, auc, confusion_matrix
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.tree import DecisionTreeClassifier
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "review2" / "results"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import cube  # noqa: E402  (local module next to this script)
+import gauge  # noqa: E402
 NAVY, TEAL, ORANGE, SKY, MUTED = "#0B1220", "#2DD4BF", "#FB923C", "#60A5FA", "#94A3B8"
 PLOT_BG, PAPER_BG, TEXT, GRID = "#111C2E", "#111C2E", "#E6EDF7", "#334155"
 AGES = {1:"18–24",2:"25–29",3:"30–34",4:"35–39",5:"40–44",6:"45–49",7:"50–54",8:"55–59",9:"60–64",10:"65–69",11:"70–74",12:"75–79",13:"80+"}
 HEALTH = {1:"Excellent",2:"Very good",3:"Good",4:"Fair",5:"Poor"}
 INCOME = {1:"<$10k",2:"$10–15k",3:"$15–20k",4:"$20–25k",5:"$25–35k",6:"$35–50k",7:"$50–75k",8:">$75k"}
+EDUCATION = {1:"No school",2:"Elementary",3:"Some high school",4:"High school",5:"Some college",6:"College graduate"}
 
 MODEL_COLORS = {
     "Decision Tree, CART (R)": TEAL,
@@ -49,6 +56,20 @@ p,[data-testid="stCaptionContainer"],label,.stMarkdown { color:#AFC0D5 !importan
 [data-testid="stTabs"] [aria-selected="true"] { color:#5EEAD4 !important; }
 [data-testid="stDataFrame"],[data-testid="stTable"] { border:1px solid #283852; border-radius:10px; overflow:hidden; }
 [data-testid="stDownloadButton"] button,[data-testid="stBaseButton-secondary"] { border-radius:9px !important; border-color:#3A4E6F !important; color:#E6EDF7 !important; background:#18243A !important; }
+[data-testid="stBaseButton-primary"],
+[data-testid="stBaseButton-primaryFormSubmit"] { background:#2DD4BF !important; border-color:#2DD4BF !important; color:#04211C !important; }
+[data-testid="stBaseButton-primary"] *,
+[data-testid="stBaseButton-primaryFormSubmit"] * { color:#04211C !important; }
+[data-testid="stBaseButton-primary"]:hover,
+[data-testid="stBaseButton-primaryFormSubmit"]:hover { background:#5EEAD4 !important; border-color:#5EEAD4 !important; }
+[data-testid="stBaseButton-primary"]:hover *,
+[data-testid="stBaseButton-primaryFormSubmit"]:hover * { color:#04211C !important; }
+[data-testid="stBaseButton-primary"]:active,
+[data-testid="stBaseButton-primaryFormSubmit"]:active { background:#14B8A6 !important; border-color:#14B8A6 !important; }
+[data-testid="stBaseButton-primary"]:active *,
+[data-testid="stBaseButton-primaryFormSubmit"]:active * { color:#04211C !important; }
+[data-testid="stBaseButton-primary"]:focus-visible,
+[data-testid="stBaseButton-primaryFormSubmit"]:focus-visible { box-shadow:0 0 0 3px rgba(45,212,191,.35) !important; }
 .stButton button { border-radius:9px !important; font-weight:700 !important; }
 .insight { background:#0D2C31; border-left:4px solid #2DD4BF; color:#E6EDF7 !important; padding:15px 18px; border-radius:10px; margin:12px 0 22px; }
 .warning { background:#322519; border-left:4px solid #FB923C; color:#FDEAD7 !important; padding:15px 18px; border-radius:10px; margin:12px 0 22px; }
@@ -74,6 +95,124 @@ def empirical_percentile(series: pd.Series, value: float) -> float:
     return float((series <= value).mean() * 100)
 
 
+def _rgba(hex_color: str, alpha: float) -> str:
+    h = hex_color.lstrip("#")
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    return f"rgba({r},{g},{b},{alpha})"
+
+
+def threshold_metrics(threshold_df: pd.DataFrame, threshold: float) -> tuple[dict, bool]:
+    """Metrics at a threshold: exact export when available, linear interpolation otherwise."""
+    frame = threshold_df.dropna(subset=["Threshold"]).sort_values("Threshold")
+    exported = frame.Threshold.to_numpy(dtype=float)
+    exact = frame[np.isclose(frame.Threshold.astype(float), threshold)]
+    if len(exact):
+        row = exact.iloc[0]
+        return {metric: float(row[metric]) for metric in ("Accuracy", "Precision", "Recall", "F1")}, True
+    metrics = {metric: float(np.interp(threshold, exported, frame[metric].to_numpy(dtype=float)))
+               for metric in ("Accuracy", "Precision", "Recall", "F1")}
+    return metrics, False
+
+
+def _sync_threshold_from_slider() -> None:
+    st.session_state["pop_thresh_input"] = float(st.session_state["pop_thresh_slider"])
+
+
+def _sync_threshold_from_input() -> None:
+    value = float(st.session_state["pop_thresh_input"])
+    snapped = min(max(round(value * 10) / 10, 0.2), 0.5)
+    st.session_state["pop_thresh_slider"] = snapped
+
+
+# The nine factors the profile form collects. The estimate model uses exactly
+# these, so every input the user provides changes the score and nothing is
+# imputed for the twelve predictors the form does not ask about.
+PROFILE_FEATURES = ["Age", "Sex", "HighBP", "HighChol", "BMI", "PhysActivity",
+                     "DiffWalk", "GenHlth", "Income"]
+# Every numeric predictor in the balanced file — the Review 2 CART feature set.
+PROFILE_FEATURES_FULL = PROFILE_FEATURES + [
+    "CholCheck", "Smoker", "Stroke", "HeartDiseaseorAttack", "Fruits", "Veggies",
+    "HvyAlcoholConsump", "AnyHealthcare", "NoDocbcCost", "MentHlth", "PhysHlth", "Education"]
+
+# Predictors beyond the nine-factor profile. Together with PROFILE_FEATURES,
+# these are the complete 21-predictor Review 2 feature set.
+PROFILE_EXTRA_TOGGLES = [
+    ("CholCheck", "Cholesterol check in past 5 years", True),
+    ("Smoker", "Current smoker", False),
+    ("Stroke", "History of stroke", False),
+    ("HeartDiseaseorAttack", "Heart disease or heart attack", False),
+    ("Fruits", "Consumes fruit daily", True),
+    ("Veggies", "Consumes vegetables daily", True),
+    ("HvyAlcoholConsump", "Heavy alcohol use", False),
+    ("AnyHealthcare", "Has health-care coverage", True),
+    ("NoDocbcCost", "Could not see a doctor because of cost", False),
+]
+PROFILE_EXTRA_DAYS = [
+    ("MentHlth", "Poor mental-health days (0-30)", 0, 30),
+    ("PhysHlth", "Poor physical-health days (0-30)", 0, 30),
+]
+
+
+@st.cache_data(show_spinner="Fitting the profile model…")
+def _fit_profile_model(frame: pd.DataFrame, seed: int = 42):
+    """Fit the profile CART plus an all-predictor reference tree on the same split."""
+    y = frame["Diabetes_binary"].to_numpy(dtype=int)
+    indices = np.arange(len(y))
+    train_index, test_index = train_test_split(
+        indices, test_size=0.3, stratify=y, random_state=seed)
+
+    def fit(features: list[str]):
+        X = frame[features].to_numpy(dtype=float)
+        model = DecisionTreeClassifier(random_state=seed, max_depth=6, min_samples_leaf=50)
+        model.fit(X[train_index], y[train_index])
+        return model, float(model.score(X[test_index], y[test_index]))
+
+    model, accuracy = fit(PROFILE_FEATURES)
+    full_model, full_accuracy = fit(PROFILE_FEATURES_FULL)
+    return model, accuracy, full_model, full_accuracy
+
+
+def profile_estimate(age_band: int, bmi: float, sex_value: int, high_bp: int, high_chol: int,
+                     active: int, diff_walk: int, general_health: int, income: int,
+                     extra_values: dict, frame: pd.DataFrame, metrics: dict) -> dict:
+    """Score the profile with both models, then shift the output onto the population prior."""
+    model, accuracy, full_model, full_accuracy = _fit_profile_model(frame)
+    entered = {
+        "Age": age_band, "Sex": sex_value, "HighBP": high_bp, "HighChol": high_chol,
+        "BMI": bmi, "PhysActivity": active, "DiffWalk": diff_walk,
+        "GenHlth": general_health, "Income": income,
+    }
+    population_prior = float(metrics["full_target"]["1.0"]) / float(metrics["full_shape"][0])
+    balanced_prior = float(frame["Diabetes_binary"].mean())
+
+    def adjust(balanced: float) -> float:
+        odds = (balanced / (1 - balanced)
+                * (population_prior / (1 - population_prior))
+                / (balanced_prior / (1 - balanced_prior)))
+        return odds / (1 + odds)
+
+    row9 = pd.DataFrame([entered])[PROFILE_FEATURES]
+    balanced = float(model.predict_proba(row9.to_numpy(dtype=float))[0, 1])
+    row_full = pd.DataFrame([{**entered, **extra_values}])[PROFILE_FEATURES_FULL]
+    balanced_full = float(full_model.predict_proba(row_full.to_numpy(dtype=float))[0, 1])
+
+    estimate = adjust(balanced_full)
+    estimate_nine = adjust(balanced)
+    reference = float(model_df.loc[model_df.Model == "Decision Tree, CART (R)", "Accuracy"].iloc[0])
+    return {
+        "estimate": estimate,
+        "estimate_pct": estimate * 100,
+        "estimate_nine_pct": estimate_nine * 100,
+        "difference_pct": (estimate - estimate_nine) * 100,
+        "balanced_pct": balanced_full * 100,
+        "balanced_nine_pct": balanced * 100,
+        "population_prior": population_prior,
+        "accuracy": accuracy,
+        "full_accuracy": full_accuracy,
+        "reference_accuracy": reference,
+    }
+
+
 CLUSTER_FEATURES = {
     "BMI": "BMI", "High blood pressure": "HighBP", "High cholesterol": "HighChol",
     "General health": "GenHlth", "Age band": "Age", "Income band": "Income",
@@ -83,11 +222,59 @@ CLUSTER_FEATURES = {
 }
 PALETTE = [TEAL, ORANGE, SKY, "#C4B5FD", "#F472B6", "#A3E635", "#FBBF24"]
 
+# --------------------------------------------------------------------------- #
+# 3D cuboids for the five stored Review 1 OLAP operations. The cube console
+# (dashboard/cube.py) queries the same warehouse live; these builders reuse the
+# saved Review 1 result sets so the tabs stay byte-identical to the artefacts.
+# --------------------------------------------------------------------------- #
 
-def _rgba(hex_color: str, alpha: float) -> str:
-    h = hex_color.lstrip("#")
-    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
-    return f"rgba({r},{g},{b},{alpha})"
+def make_rollup_3d(frame: pd.DataFrame) -> go.Figure:
+    df = frame.rename(columns={"Age_Bracket": "Age band"})
+    return cube.build_cube_figure(
+        df[["Age band", "Prevalence_Pct", "Total_Respondents"]], ["Age band"], "Prevalence_Pct",
+        titles=["Age band", "ALL", "ALL"],
+        member_orders=[list(cube.AGES), ["ALL"], ["ALL"]],
+        label_maps=[cube.AGES, {}, {}], count_column="Total_Respondents")
+
+
+def make_drilldown_3d(frame: pd.DataFrame) -> go.Figure:
+    df = frame.rename(columns={"Age_Bracket": "Age band"})
+    return cube.build_cube_figure(
+        df[["Age band", "Gender", "Prevalence_Pct", "Total_Respondents"]], ["Age band", "Gender"],
+        "Prevalence_Pct", titles=["Age band", "Sex", "ALL"],
+        member_orders=[list(cube.AGES), ["Female", "Male"], ["ALL"]],
+        label_maps=[cube.AGES, {}, {}], count_column="Total_Respondents")
+
+
+def make_slice_3d(frame: pd.DataFrame) -> go.Figure:
+    df = frame.rename(columns={"General_Health": "General health"})
+    return cube.build_cube_figure(
+        df[["General health", "Diabetes_Prevalence_Pct", "Total_Respondents"]], ["General health"],
+        "Diabetes_Prevalence_Pct", titles=["General health", "ALL", "ALL"],
+        member_orders=[list(cube.HEALTH), ["ALL"], ["ALL"]],
+        label_maps=[cube.HEALTH, {}, {}], count_column="Total_Respondents")
+
+
+def make_dice_3d(frame: pd.DataFrame) -> go.Figure:
+    df = frame.rename(columns={"Income_Bracket": "Income band", "Smoker_Status": "Smoker"})
+    return cube.build_cube_figure(
+        df[["Income band", "Smoker", "Diabetes_Prevalence_Pct", "Respondent_Count"]],
+        ["Income band", "Smoker"], "Diabetes_Prevalence_Pct",
+        titles=["Income band", "Smoker", "ALL"],
+        member_orders=[list(cube.INCOME), [0, 1], ["ALL"]],
+        label_maps=[cube.INCOME, cube.YES_NO, {}], count_column="Respondent_Count")
+
+
+def make_pivot_3d(frame: pd.DataFrame) -> go.Figure:
+    long = frame.melt(id_vars="Age_Bracket",
+                      value_vars=["Female_Diabetes_Cases", "Male_Diabetes_Cases"],
+                      var_name="Sex", value_name="Diabetes cases")
+    long["Sex"] = long.Sex.str.replace("_Diabetes_Cases", "", regex=False)
+    return cube.build_cube_figure(
+        long[["Age_Bracket", "Sex", "Diabetes cases"]], ["Age_Bracket", "Sex"], "Diabetes cases",
+        titles=["Age band", "Sex", "ALL"],
+        member_orders=[list(cube.AGES), ["Female", "Male"], ["ALL"]],
+        label_maps=[cube.AGES, {}, {}])
 
 
 @st.cache_data(show_spinner="Re-fitting K-Means and PCA…")
@@ -142,7 +329,6 @@ with st.sidebar:
         "Patterns & Clusters",
         "My Health Profile",
         "Advanced Model Analytics",
-        "What-If Explorer",
         "Methods & Limitations"
     ], label_visibility="collapsed")
     st.divider()
@@ -221,43 +407,71 @@ elif page == "Explore the Data":
 elif page == "Warehouse & OLAP":
     st.subheader("Data warehouse: real OLAP outputs")
     st.caption("One fact record per respondent. Tables and charts are sourced from the Review 1 SQLite star-schema results.")
-    
+
     # Add Custom OLAP Builder as an additional tab
-    all_tabs = list(olap.keys()) + ["Custom OLAP Builder"]
+    all_tabs = list(olap.keys()) + ["Custom OLAP Builder", "The Cube (SQL)"]
     tabs = st.tabs(all_tabs)
-    
-    for tab, name in zip(tabs[:-1], olap.keys()):
+
+    for tab, name in zip(tabs[:len(olap)], olap.keys()):
         with tab:
             frame = pd.DataFrame(olap[name])
             st.dataframe(frame, width="stretch", hide_index=True)
+
+            # 2D/3D toggle for each OLAP operation
+            view_mode = st.radio("View", ["2D", "3D"], horizontal=True, key=f"view_{name}")
+
             if name == "Roll-up":
                 frame["Age label"] = frame.Age_Bracket.map(AGES)
-                fig = px.bar(frame, x="Age label", y="Prevalence_Pct", color="Avg_BMI", color_continuous_scale=[SKY, TEAL], hover_data=["Total_Respondents", "Diabetes_Cases"])
-                fig.update_layout(yaxis_title="Diabetes prevalence (%)", title="Roll-up: prevalence and BMI by age")
+                if view_mode == "2D":
+                    fig = px.bar(frame, x="Age label", y="Prevalence_Pct", color="Avg_BMI", color_continuous_scale=[SKY, TEAL], hover_data=["Total_Respondents", "Diabetes_Cases"])
+                    fig.update_layout(yaxis_title="Diabetes prevalence (%)", title="Roll-up: prevalence and BMI by age")
+                    st.plotly_chart(darken(fig, 390), width="stretch")
+                else:
+                    fig = make_rollup_3d(frame)
+                    st.plotly_chart(fig, width="stretch", config={"displaylogo": False})
             elif name == "Drill-down":
                 frame["Age label"] = frame.Age_Bracket.map(AGES)
-                fig = px.bar(frame, x="Age label", y="Prevalence_Pct", color="Gender", barmode="group", hover_data=["Total_Respondents"], color_discrete_map={"Female":SKY,"Male":TEAL})
-                fig.update_layout(yaxis_title="Diabetes prevalence (%)", title="Drill-down: age and gender")
+                if view_mode == "2D":
+                    fig = px.bar(frame, x="Age label", y="Prevalence_Pct", color="Gender", barmode="group", hover_data=["Total_Respondents"], color_discrete_map={"Female":SKY,"Male":TEAL})
+                    fig.update_layout(yaxis_title="Diabetes prevalence (%)", title="Drill-down: age and gender")
+                    st.plotly_chart(darken(fig, 390), width="stretch")
+                else:
+                    fig = make_drilldown_3d(frame)
+                    st.plotly_chart(fig, width="stretch", config={"displaylogo": False})
             elif name == "Slice":
                 frame["Health"] = frame.General_Health.map(HEALTH)
-                fig = px.line(frame, x="Health", y="Diabetes_Prevalence_Pct", markers=True, hover_data=["Total_Respondents"], color_discrete_sequence=[TEAL])
-                fig.update_layout(yaxis_title="Diabetes prevalence (%)", title="Slice: hypertension and general health")
+                if view_mode == "2D":
+                    fig = px.line(frame, x="Health", y="Diabetes_Prevalence_Pct", markers=True, hover_data=["Total_Respondents"], color_discrete_sequence=[TEAL])
+                    fig.update_layout(yaxis_title="Diabetes prevalence (%)", title="Slice: hypertension and general health")
+                    st.plotly_chart(darken(fig, 390), width="stretch")
+                else:
+                    fig = make_slice_3d(frame)
+                    st.plotly_chart(fig, width="stretch", config={"displaylogo": False})
             elif name == "Dice":
                 frame["Income"] = frame.Income_Bracket.map(INCOME); frame["Smoking"] = frame.Smoker_Status.map({0:"No",1:"Yes"})
-                fig = px.density_heatmap(frame, x="Income", y="Smoking", z="Diabetes_Prevalence_Pct", text_auto=".1f", color_continuous_scale=["#1E3A4C", TEAL], hover_data=["Respondent_Count"])
-                fig.update_layout(title="Dice: high-risk senior sub-cube", coloraxis_colorbar_title="Prevalence (%)")
-            else:
+                if view_mode == "2D":
+                    fig = px.density_heatmap(frame, x="Income", y="Smoking", z="Diabetes_Prevalence_Pct", text_auto=".1f", color_continuous_scale=["#1E3A4C", TEAL], hover_data=["Respondent_Count"])
+                    fig.update_layout(title="Dice: high-risk senior sub-cube", coloraxis_colorbar_title="Prevalence (%)")
+                    st.plotly_chart(darken(fig, 390), width="stretch")
+                else:
+                    fig = make_dice_3d(frame)
+                    st.plotly_chart(fig, width="stretch", config={"displaylogo": False})
+            else:  # Pivot
                 frame["Age label"] = frame.Age_Bracket.map(AGES)
-                fig = go.Figure([go.Bar(x=frame["Age label"], y=frame.Female_Diabetes_Cases, name="Female", marker_color=SKY), go.Bar(x=frame["Age label"], y=frame.Male_Diabetes_Cases, name="Male", marker_color=TEAL)])
-                fig.update_layout(barmode="group", title="Pivot: diabetes cases by sex", yaxis_title="Cases")
-            st.plotly_chart(darken(fig, 390), width="stretch")
+                if view_mode == "2D":
+                    fig = go.Figure([go.Bar(x=frame["Age label"], y=frame.Female_Diabetes_Cases, name="Female", marker_color=SKY), go.Bar(x=frame["Age label"], y=frame.Male_Diabetes_Cases, name="Male", marker_color=TEAL)])
+                    fig.update_layout(barmode="group", title="Pivot: diabetes cases by sex", yaxis_title="Cases")
+                    st.plotly_chart(darken(fig, 390), width="stretch")
+                else:
+                    fig = make_pivot_3d(frame)
+                    st.plotly_chart(fig, width="stretch", config={"displaylogo": False})
             st.download_button(f"Download {name} results", frame.to_csv(index=False).encode(), f"olap_{name.lower().replace(' ','_')}.csv", "text/csv", key=f"dl_{name}")
-    
+
     # Custom OLAP Builder tab
-    with tabs[-1]:
+    with tabs[-2]:
         st.subheader("Custom OLAP Builder")
         st.caption("Select dimensions, measures, and filters to create custom OLAP queries on the balanced sample.")
-        
+
         # Dimension selection
         dim_cols = ["Age", "Sex", "Income", "Education", "GenHlth", "BMI", "HighBP", "HighChol", "Smoker", "PhysActivity", "DiffWalk", "HeartDiseaseorAttack", "Stroke"]
         measure_options = {
@@ -267,21 +481,21 @@ elif page == "Warehouse & OLAP":
             "Avg MentHlth": "MentHlth",
             "Avg PhysHlth": "PhysHlth"
         }
-        
+
         col1, col2 = st.columns(2)
         with col1:
             row_dims = st.multiselect("Row dimensions", dim_cols, default=["Age"], key="olap_row_dims")
             col_dims = st.multiselect("Column dimensions (for pivot)", ["None"] + dim_cols, default=["None"], key="olap_col_dims")
         with col2:
             measure = st.selectbox("Measure", list(measure_options.keys()), key="olap_measure")
-            filter_expr = st.text_input("Filter expression (pandas query syntax)", 
+            filter_expr = st.text_input("Filter expression (pandas query syntax)",
                                          placeholder="e.g., Age >= 8 and BMI > 30",
                                          key="olap_filter")
-        
+
         # Build query
         if st.button("Run OLAP query", type="primary", key="olap_run"):
             data = bal.copy()
-            
+
             # Apply filter if provided
             if filter_expr.strip():
                 try:
@@ -290,11 +504,11 @@ elif page == "Warehouse & OLAP":
                 except Exception as e:
                     st.error(f"Invalid filter expression: {e}")
                     data = pd.DataFrame()  # empty
-            
+
             if len(data) > 0:
                 # Build aggregation
                 group_cols = row_dims + ([c for c in col_dims if c != "None"])
-                
+
                 if measure == "Count":
                     result = data.groupby(group_cols, as_index=False).size().rename(columns={"size": measure})
                 elif measure == "Diabetes prevalence (%)":
@@ -303,9 +517,9 @@ elif page == "Warehouse & OLAP":
                 else:
                     agg_col = measure_options[measure]
                     result = data.groupby(group_cols, as_index=False).agg(**{measure: (agg_col, "mean")})
-                
+
                 st.dataframe(result, width="stretch", hide_index=True)
-                
+
                 # Auto-chart
                 if len(row_dims) == 1 and (not col_dims or col_dims == ["None"]):
                     x_col = row_dims[0]
@@ -325,12 +539,15 @@ elif page == "Warehouse & OLAP":
                                               text_auto=".1f", color_continuous_scale=["#1E3A4C", TEAL])
                     fig.update_layout(title=f"Custom OLAP: {measure} by {row_dims[0]} x {pivot_col}")
                     st.plotly_chart(darken(fig, 390), width="stretch")
-                
+
                 st.download_button("Download custom OLAP result", result.to_csv(index=False).encode(),
                                     "custom_olap_result.csv", "text/csv", key="dl_custom_olap")
             else:
                 st.warning("No data matches the filter.")
-    
+
+    with tabs[-1]:
+        cube.render_cube_console(st)
+
     with st.expander("Star schema structure"):
         st.code("DIM_DEMOGRAPHICS ─┐\nDIM_LIFESTYLE ────┤\nDIM_CLINICAL_RISK ├── FACT_HEALTH_SURVEY\nDIM_GENERAL_HEALTH┘\n\nFact grain: one survey respondent\nMeasures: diabetes label, BMI, mental-health days, physical-health days", language="text")
 
@@ -376,27 +593,44 @@ elif page == "Population Reality Check":
     a.metric("Full-file test prevalence", "≈14%", "realistic class distribution")
     b.metric("Always-No accuracy", f"{baseline.Accuracy:.1%}", "but recall is 0%")
     c.metric("Recall at threshold 0.50", f"{float(threshold_df.loc[threshold_df.Threshold == .5, 'Recall'].iloc[0]):.1%}", "misses most positive cases")
-    
-    # Enhanced threshold selection: slider + number input
+
+    # Threshold selection: slider for the exported grid, number input for any value.
+    # The two widgets stay in sync and off-grid values are interpolated.
     thresh_col1, thresh_col2 = st.columns([3, 1])
     with thresh_col1:
-        threshold = st.slider("Select decision threshold", .2, .5, .2, .1, help="Available Review 2 outputs: 0.2, 0.3, 0.4, and 0.5.", key="pop_thresh_slider")
+        st.slider("Select decision threshold", .2, .5, .2, .1, key="pop_thresh_slider",
+                  on_change=_sync_threshold_from_slider,
+                  help="Exported Review 2 thresholds: 0.2, 0.3, 0.4, and 0.5.")
     with thresh_col2:
-        threshold = st.number_input("Custom threshold", min_value=0.0, max_value=1.0, value=threshold, step=0.01, format="%.2f", key="pop_thresh_input", help="Enter any threshold 0.00–1.00 for interpolation")
-    
-    chosen = threshold_df[np.isclose(threshold_df.Threshold.astype(float), threshold)].iloc[0]
+        st.number_input("Custom threshold", min_value=0.0, max_value=1.0, value=0.2, step=0.01,
+                        format="%.2f", key="pop_thresh_input", on_change=_sync_threshold_from_input,
+                        help="Any threshold 0.00–1.00. Values between the exported points are interpolated.")
+    threshold = float(st.session_state["pop_thresh_input"])
+
+    chosen, exact_match = threshold_metrics(threshold_df, threshold)
     cols = st.columns(4)
     for col, key in zip(cols, ["Accuracy", "Precision", "Recall", "F1"]):
         col.metric(key, f"{chosen[key]:.1%}")
-    
+    if exact_match:
+        st.caption("Metrics are the exported Review 2 values for this threshold.")
+    else:
+        st.caption("Threshold is off the exported grid (0.2–0.5): metrics are linearly interpolated "
+                   "between the nearest exported points, and clamped at the ends of that range.")
+
     # Enhanced threshold trade-off chart with custom threshold marker
     plot = threshold_df.dropna(subset=["Threshold"]).melt(id_vars="Threshold", value_vars=["Accuracy","Precision","Recall","F1"], var_name="Metric", value_name="Score")
     fig = px.line(plot, x="Threshold", y="Score", color="Metric", markers=True, color_discrete_map={"Accuracy":SKY,"Precision":ORANGE,"Recall":TEAL,"F1":"#C4B5FD"})
     fig.add_vline(x=threshold, line_dash="dash", line_color=TEXT, annotation_text=f"Selected: {threshold:.2f}", annotation_position="top")
     fig.update_layout(yaxis_tickformat=".0%", title="Threshold trade-offs (full-file evaluation)")
     st.plotly_chart(darken(fig, 420), width="stretch")
-    
-    st.dataframe(threshold_df.style.format({c:"{:.1%}" for c in ["Accuracy","Precision","Recall","F1"]}), width="stretch", hide_index=True)
+
+    threshold_table = threshold_df.copy()
+    threshold_table["Threshold"] = threshold_table.Threshold.map(
+        lambda value: "—" if pd.isna(value) else f"{value:.2f}")
+    for column in ["Accuracy", "Precision", "Recall", "F1"]:
+        threshold_table[column] = threshold_table[column].map(
+            lambda value: "—" if pd.isna(value) else f"{value:.1%}")
+    st.dataframe(threshold_table, width="stretch", hide_index=True)
     st.markdown('<div class="insight"><b>Interpretation:</b> at 0.20, recall is about 60.7% and precision 31.7%; at 0.50, recall falls to about 10.5%. Screening threshold choice depends on the consequences of false negatives and false positives.</div>', unsafe_allow_html=True)
 
 elif page == "Patterns & Clusters":
@@ -517,8 +751,13 @@ elif page == "Patterns & Clusters":
                                "pca_cluster_assignments.csv", "text/csv")
 
 elif page == "My Health Profile":
-    st.subheader("My health profile: survey comparison")
-    st.markdown('<div class="warning"><b>Educational comparison only — not diagnosis, prediction, or medical advice.</b> Your inputs are compared with self-reported BRFSS respondents. This dashboard does not run a clinical model or estimate a personal probability. Consult a qualified clinician for health concerns.</div>', unsafe_allow_html=True)
+    st.subheader("My health profile: cohort, cluster and risk estimate")
+    st.markdown(
+        '<div class="warning"><b>Screening demonstration — not diagnosis, medical advice, or a clinical '
+        'device.</b> Your inputs are compared with self-reported BRFSS 2015 respondents and scored by a '
+        'decision-tree model fitted on the balanced survey sample, then prior-adjusted to the population '
+        'prevalence. Consult a qualified clinician for any health concern.</div>', unsafe_allow_html=True)
+
     with st.form("profile_form", border=False):
         a,b,c = st.columns(3)
         age_band = a.select_slider("Age band", options=list(AGES), value=8, format_func=lambda x: AGES[x])
@@ -532,86 +771,205 @@ elif page == "My Health Profile":
         diff_walk = g.toggle("Serious difficulty walking")
         general_health = h.selectbox("Self-rated general health", list(HEALTH), index=2, format_func=lambda x: HEALTH[x])
         income = i.selectbox("Household income band", list(INCOME), index=5, format_func=lambda x: INCOME[x])
-        
-        # Free-text additional factors
-        st.markdown("##### Additional factors (optional)")
-        j,k,l = st.columns(3)
-        custom_factor_1 = j.text_input("Custom factor name", placeholder="e.g., Family history")
-        custom_value_1 = k.number_input("Your value", min_value=0.0, max_value=100.0, value=0.0, step=1.0, key="custom_val_1")
-        custom_cohort_1 = l.number_input("Cohort avg (%)", min_value=0.0, max_value=100.0, value=0.0, step=1.0, key="custom_cohort_1")
-        
-        m,n,o = st.columns(3)
-        custom_factor_2 = m.text_input("Custom factor name", placeholder="e.g., Stress level")
-        custom_value_2 = n.number_input("Your value", min_value=0.0, max_value=100.0, value=0.0, step=1.0, key="custom_val_2")
-        custom_cohort_2 = o.number_input("Cohort avg (%)", min_value=0.0, max_value=100.0, value=0.0, step=1.0, key="custom_cohort_2")
-        
+
+        with st.expander("Complete the remaining 12 survey answers (21-predictor estimate)"):
+            st.caption("The all-parameter estimate uses every one of the 21 Review 2 predictors. "
+                        "The nine fields above are shared with the original profile estimate; enter the "
+                        "remaining 12 fields here to make the full estimate entirely profile-driven.")
+            extra_values: dict[str, float] = {}
+            for row_start in range(0, len(PROFILE_EXTRA_TOGGLES), 4):
+                toggle_columns = st.columns(4)
+                for column, (key, label, default) in zip(
+                        toggle_columns, PROFILE_EXTRA_TOGGLES[row_start:row_start + 4]):
+                    extra_values[key] = float(column.toggle(label, value=default, key=f"prof_{key}"))
+            second = st.columns(4)
+            for index, (key, label, low, high) in enumerate(PROFILE_EXTRA_DAYS):
+                column = second[index]
+                extra_values[key] = float(column.number_input(label, min_value=low, max_value=high,
+                                                              value=0, step=1, key=f"prof_{key}"))
+            extra_values["Education"] = float(second[2].selectbox(
+                "Education", list(EDUCATION), index=4, format_func=lambda x: EDUCATION[x], key="prof_Education"))
+            st.caption("Defaults reflect common values in the balanced sample; change them when they do not describe you.")
+
         submit = st.form_submit_button("Compare profile with survey sample", type="primary", width="stretch")
+
     if submit:
         sex_value = 0 if sex == "Female" else 1
+
+        # -- matched respondent cohort ---------------------------------------- #
         age_sex = bal[(bal.Age == age_band) & (bal.Sex == sex_value)]
         exact = age_sex[(age_sex.HighBP == int(high_bp)) & (age_sex.HighChol == int(high_chol)) & (age_sex.GenHlth == general_health)]
         cohort = exact if len(exact) >= 30 else age_sex
-        scope = "closely matched age/sex/health-factor cohort" if len(exact) >= 30 else "age-and-sex cohort (the exact match was too small for a stable narrow comparison)"
-        profile_vector = np.array([bmi, int(high_bp)*100, int(high_chol)*100, age_band])
-        centers = cluster_df[["Mean_BMI","Pct_HighBP","Pct_HighChol","Mean_Age_Band"]].to_numpy(float)
+        scope = ("closely matched age/sex/health-factor cohort" if len(exact) >= 30
+                 else "age-and-sex cohort (the exact match was too small for a stable narrow comparison)")
+
+        # -- nearest saved cluster (shared by both views) --------------------- #
+        profile_vector = np.array([bmi, int(high_bp) * 100, int(high_chol) * 100, age_band])
+        centers = cluster_df[["Mean_BMI", "Pct_HighBP", "Pct_HighChol", "Mean_Age_Band"]].to_numpy(float)
         scale = np.array([bal.BMI.std(), 50, 50, bal.Age.std()])
-        nearest = cluster_df.iloc[int(np.argmin(np.sum(((centers-profile_vector)/scale)**2, axis=1)))]
-        st.markdown(f'<div class="insight"><b>Comparison set:</b> {len(cohort):,} respondents in the {scope}. Any observed diabetes share below describes this deliberately balanced survey sample; it is not your probability or a population estimate.</div>', unsafe_allow_html=True)
-        m1,m2,m3,m4 = st.columns(4)
-        m1.metric("Cohort diabetes share", f"{cohort.Diabetes_binary.mean()*100:.1f}%", "descriptive sample share")
-        m2.metric("BMI percentile in sample", f"{empirical_percentile(bal.BMI,bmi):.0f}th", f"sample median {bal.BMI.median():.1f}")
-        m3.metric("Nearest survey cluster", f"Cluster {int(nearest.Cluster)}", f"cluster share {nearest.Pct_Diabetes:.1f}%")
-        m4.metric("Comparison cohort size", f"{len(cohort):,}", "larger cohorts are more stable")
-        # Build profile with optional custom factors
-        measures = ["BMI","High BP","High cholesterol","Age band","Physically active","Difficulty walking"]
-        your_vals = [bmi,int(high_bp)*100,int(high_chol)*100,age_band,int(active)*100,int(diff_walk)*100]
-        cohort_vals = [cohort.BMI.mean(),cohort.HighBP.mean()*100,cohort.HighChol.mean()*100,cohort.Age.mean(),cohort.PhysActivity.mean()*100,cohort.DiffWalk.mean()*100]
-        all_vals = [bal.BMI.mean(),bal.HighBP.mean()*100,bal.HighChol.mean()*100,bal.Age.mean(),bal.PhysActivity.mean()*100,bal.DiffWalk.mean()*100]
-        
-        if custom_factor_1.strip():
-            measures.append(custom_factor_1.strip())
-            your_vals.append(custom_value_1)
-            cohort_vals.append(custom_cohort_1)
-            all_vals.append(custom_cohort_1)
-        if custom_factor_2.strip():
-            measures.append(custom_factor_2.strip())
-            your_vals.append(custom_value_2)
-            cohort_vals.append(custom_cohort_2)
-            all_vals.append(custom_cohort_2)
-        
-        profile = pd.DataFrame({"Measure": measures, "Your profile": your_vals, 
-                                 "Comparison cohort average": cohort_vals, 
-                                 "All balanced respondents": all_vals})
-        left,right = st.columns([1.15,1])
-        with left:
-            long = profile.melt(id_vars="Measure", var_name="Series", value_name="Value")
-            fig = px.bar(long, x="Measure", y="Value", color="Series", barmode="group", color_discrete_map={"Your profile":ORANGE,"Comparison cohort average":TEAL,"All balanced respondents":MUTED})
-            fig.update_layout(title="Your profile vs survey comparison", yaxis_title="Value (binary factors shown as %)", legend_title_text="")
-            st.plotly_chart(darken(fig, 430), width="stretch")
-        with right:
-            fig = px.histogram(cohort, x="BMI", nbins=30, color_discrete_sequence=[TEAL])
-            fig.add_vline(x=bmi, line_width=3, line_color=ORANGE, annotation_text="Your BMI")
-            fig.add_vline(x=cohort.BMI.median(), line_dash="dash", line_color=SKY, annotation_text="Cohort median")
-            fig.update_layout(title="BMI in comparison cohort", yaxis_title="Respondents")
-            st.plotly_chart(darken(fig, 430), width="stretch")
-        clusters = cluster_df.copy(); clusters["Selection"] = np.where(clusters.Cluster == nearest.Cluster, "Nearest profile cluster", "Other cluster")
-        fig = px.bar(clusters, x="Cluster", y="Pct_Diabetes", color="Selection", hover_data=["Size","Mean_BMI","Pct_HighBP","Pct_HighChol","Mean_Age_Band"], color_discrete_map={"Nearest profile cluster":ORANGE,"Other cluster":MUTED})
-        fig.update_layout(title="Nearest saved cluster context", yaxis_title="Diabetes share within cluster (%)", legend_title_text="")
-        st.plotly_chart(darken(fig, 370), width="stretch")
-        st.dataframe(profile.style.format({"Your profile":"{:.1f}","Comparison cohort average":"{:.1f}","All balanced respondents":"{:.1f}"}), width="stretch", hide_index=True)
-        st.caption("Binary factors are 0/100 for your profile and percentages for cohorts. Cluster context is a nearest-centroid comparison to saved profiles, not a trained personal assignment or diagnosis.")
+        nearest = cluster_df.iloc[int(np.argmin(np.sum(((centers - profile_vector) / scale) ** 2, axis=1)))]
+
+        # -- model estimate with prior-shift correction ------------------------ #
+        estimate = profile_estimate(
+            age_band, bmi, sex_value, int(high_bp), int(high_chol), int(active), int(diff_walk),
+            general_health, income, extra_values, bal, metrics)
+
+        gauge_figure, band = gauge.build_risk_gauge(
+            estimate["estimate_pct"], baseline_pct=estimate["population_prior"] * 100)
+
+        gauge_column, summary_column = st.columns([1, 1.35])
+        with gauge_column:
+            st.markdown('<div class="cube-panel-title">Final risk estimate</div>', unsafe_allow_html=True)
+            st.plotly_chart(gauge_figure, width="stretch",
+                            config={"displaylogo": False, "displayModeBar": False})
+            st.markdown(gauge.badge_html(band["label"], band["colour"]), unsafe_allow_html=True)
+            st.markdown(
+                f'<div style="text-align:center;color:#94A3B8;font-size:13px;">'
+                f'Recommended action: {band["follow_up"]}<br>'
+                f'population baseline {estimate["population_prior"]:.1%} marked in white</div>',
+                unsafe_allow_html=True)
+            st.markdown(
+                f'<div style="text-align:center;color:#7C8DA6;font-size:12px;margin-top:6px;">'
+                f'all-predictor model <b style="color:#AFC0D5">{estimate["estimate_pct"]:.1f}%</b>'
+                f' &nbsp;·&nbsp; 9-factor check {estimate["estimate_nine_pct"]:.1f}%'
+                f' &nbsp;·&nbsp; difference {estimate["difference_pct"]:+.1f} pts</div>',
+                unsafe_allow_html=True)
+        with summary_column:
+            st.markdown('<div class="cube-panel-title">What the estimate is based on</div>', unsafe_allow_html=True)
+            m1,m2,m3,m4 = st.columns(4)
+            m1.metric("Estimated risk", f"{estimate['estimate_pct']:.1f}%", band["label"])
+            m2.metric("Cohort share", f"{cohort.Diabetes_binary.mean()*100:.1f}%", "balanced")
+            m3.metric("Cohort size", f"{len(cohort):,}", "rows")
+            m4.metric("BMI percentile", f"{empirical_percentile(bal.BMI, bmi):.0f}th", f"median {bal.BMI.median():.1f}")
+            st.markdown(
+                f'<div class="insight"><b>Comparison set:</b> {len(cohort):,} respondents in the {scope}. '
+                f'The gauge shows the all-predictor CART (the Review 2 feature set, '
+                f'{estimate["full_accuracy"]:.1%} held-out accuracy) prior-adjusted to the population '
+                f'prevalence ({estimate["population_prior"]:.1%}); the cohort share is the observed rate '
+                f'inside the balanced sample. Neither is a personal diagnosis.</div>', unsafe_allow_html=True)
+
+        cohort_tab, cluster_tab, method_tab = st.tabs(
+            ["Cohort comparison", "Cluster context", "How this estimate is built"])
+
+        with cohort_tab:
+            measures = ["BMI", "High BP", "High cholesterol", "Age band", "Income band",
+                        "Physically active", "Difficulty walking"]
+            your_vals = [bmi, int(high_bp) * 100, int(high_chol) * 100, age_band, income,
+                         int(active) * 100, int(diff_walk) * 100]
+            cohort_vals = [cohort.BMI.mean(), cohort.HighBP.mean() * 100, cohort.HighChol.mean() * 100,
+                           cohort.Age.mean(), cohort.Income.mean(), cohort.PhysActivity.mean() * 100,
+                           cohort.DiffWalk.mean() * 100]
+            all_vals = [bal.BMI.mean(), bal.HighBP.mean() * 100, bal.HighChol.mean() * 100,
+                        bal.Age.mean(), bal.Income.mean(), bal.PhysActivity.mean() * 100,
+                        bal.DiffWalk.mean() * 100]
+
+            profile = pd.DataFrame({"Measure": measures, "Your profile": your_vals,
+                                     "Comparison cohort average": cohort_vals,
+                                     "All balanced respondents": all_vals})
+            left,right = st.columns([1.15,1])
+            with left:
+                long = profile.melt(id_vars="Measure", var_name="Series", value_name="Value")
+                fig = px.bar(long, x="Measure", y="Value", color="Series", barmode="group",
+                             color_discrete_map={"Your profile": ORANGE, "Comparison cohort average": TEAL,
+                                                 "All balanced respondents": MUTED})
+                fig.update_layout(title="Your profile vs survey comparison",
+                                  yaxis_title="Value (binary factors shown as %)", legend_title_text="")
+                st.plotly_chart(darken(fig, 430), width="stretch")
+            with right:
+                fig = px.histogram(cohort, x="BMI", nbins=30, color_discrete_sequence=[TEAL])
+                fig.add_vline(x=bmi, line_width=3, line_color=ORANGE, annotation_text="Your BMI")
+                fig.add_vline(x=cohort.BMI.median(), line_dash="dash", line_color=SKY, annotation_text="Cohort median")
+                fig.update_layout(title="BMI in comparison cohort", yaxis_title="Respondents")
+                st.plotly_chart(darken(fig, 430), width="stretch")
+            st.dataframe(profile.style.format({"Your profile":"{:.1f}","Comparison cohort average":"{:.1f}","All balanced respondents":"{:.1f}"}),
+                         width="stretch", hide_index=True)
+            st.caption("Age band and income band are shown as band index (1–13 and 1–8). Binary factors are 0/100 "
+                       "for your profile and percentages for cohorts. The chart mixes units, so read the table for "
+                       "exact values.")
+
+        with cluster_tab:
+            st.markdown(
+                f'<div class="insight"><b>Nearest cluster:</b> Cluster {int(nearest.Cluster)} — '
+                f'{nearest.Size:,} respondents, {nearest.Pct_Diabetes:.1f}% diabetes share in the balanced sample. '
+                f'Centroids only describe BMI, high blood pressure, high cholesterol and age, so sex, activity, '
+                f'difficulty walking, general health and income are compared against the respondent cohort on the '
+                f'first tab.</div>', unsafe_allow_html=True)
+            categories = ["BMI (norm)", "High BP (%)", "High Chol (%)", "Age band (norm)"]
+            user_vals = profile_vector / scale
+            fig = go.Figure()
+            fig.add_trace(go.Scatterpolar(r=user_vals, theta=categories, fill="toself", name="Your profile",
+                                           line_color=ORANGE, fillcolor="rgba(251,146,60,0.2)"))
+            for _, cl in cluster_df.iterrows():
+                cl_vec = np.array([cl.Mean_BMI, cl.Pct_HighBP, cl.Pct_HighChol, cl.Mean_Age_Band]) / scale
+                fig.add_trace(go.Scatterpolar(r=cl_vec, theta=categories, fill="toself",
+                                               name=f"Cluster {int(cl.Cluster)} ({cl.Pct_Diabetes:.1f}% diabetes)",
+                                               opacity=0.3, line_width=1))
+            fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, max(user_vals.max(), 2)])),
+                              title="Your profile vs cluster centroids (normalized)")
+            st.plotly_chart(darken(fig, 450), width="stretch")
+            fig2 = px.bar(cluster_df, x=cluster_df.Cluster.astype(str), y="Pct_Diabetes",
+                           color=cluster_df.Cluster.astype(str), color_discrete_sequence=[TEAL, ORANGE, SKY],
+                           hover_data=["Size", "Mean_BMI", "Pct_HighBP", "Pct_HighChol"])
+            fig2.add_hline(y=bal.Diabetes_binary.mean() * 100, line_dash="dash", line_color=MUTED,
+                           annotation_text="Balanced sample avg")
+            fig2.update_layout(title="Diabetes share by cluster (balanced sample)",
+                               xaxis_title="Cluster", yaxis_title="Diabetes share (%)", showlegend=False)
+            st.plotly_chart(darken(fig2, 350), width="stretch")
+            st.dataframe(cluster_df.style.format({"Mean_BMI":"{:.1f}","Pct_HighBP":"{:.1f}%",
+                                                   "Pct_HighChol":"{:.1f}%","Pct_Diabetes":"{:.1f}%"}),
+                         width="stretch", hide_index=True)
+            st.caption("Cluster diabetes shares are descriptive statistics from the balanced sample, not personal risk estimates.")
+
+        with method_tab:
+            st.markdown("#### Model, correction and caveats")
+            assumed = [label for key, label, default in PROFILE_EXTRA_TOGGLES
+                       if extra_values.get(key, default) == float(default)]
+            assumed += [label for key, label, low, high in PROFILE_EXTRA_DAYS
+                        if extra_values.get(key, 0) == 0.0]
+            if extra_values.get("Education", 5) == 5.0:
+                assumed.append("Education")
+            detail_rows = [
+                ("Model", "Decision tree (CART, Gini), scikit-learn, seed 42"),
+                ("Features used", f"{len(PROFILE_FEATURES_FULL)} predictors — the Review 2 CART feature set"),
+                ("Training split", "70/30 stratified, seed 42 (balanced sample)"),
+                ("Held-out accuracy (all predictors)", f"{estimate['full_accuracy']:.1%}"),
+                ("Held-out accuracy (9 factors you entered)", f"{estimate['accuracy']:.1%}"),
+                ("Review 2 CART reference accuracy", f"{estimate['reference_accuracy']:.1%} (R rpart, all predictors)"),
+                ("Raw model output (balanced prior 50%)", f"{estimate['balanced_pct']:.1f}%"),
+                ("Population prior applied", f"{estimate['population_prior']:.1%}"),
+                ("Prior-adjusted estimate (all predictors)", f"{estimate['estimate_pct']:.1f}%"),
+                ("Prior-adjusted estimate (9-factor check)", f"{estimate['estimate_nine_pct']:.1f}%"),
+                ("Difference between the two", f"{estimate['difference_pct']:+.1f} pts"),
+                ("Risk band", band["label"]),
+                ("Answers left at the sample default",
+                 ", ".join(assumed) if assumed else "none — every optional answer was changed"),
+            ]
+            st.dataframe(pd.DataFrame(detail_rows, columns=["Item", "Value"]), width="stretch", hide_index=True)
+            st.markdown(
+                '<div class="insight"><b>Why the correction matters:</b> the modelling file is balanced '
+                '(50% diabetes), so its raw output cannot be read as a population risk. The balanced output is '
+                'shifted onto the population odds (13.9% prevalence) with the standard prior-shift formula '
+                '<code>odds_target = odds_model × (prior_target / (1 − prior_target)) ÷ (prior_model / (1 − prior_model))</code>, '
+                'which preserves the model\'s ranking of profiles.</div>', unsafe_allow_html=True)
+            for note in [
+                "This is a demonstration-grade screening estimate from a single 2015 cross-sectional survey; it is not a diagnosis, prognosis, or medical advice.",
+                "The gauge uses the full 21-predictor Review 2 feature set. The nine original profile fields and the 12 fields in the expanded section are all passed directly to the model; changing any field can change the estimate.",
+                "Self-reported data carry recall and reporting bias; associations in this dataset are not causal.",
+                "The gauge bands are illustrative cut-points chosen for the demo, not clinical thresholds.",
+            ]:
+                st.warning(note)
     else:
-        st.info("Enter a profile and choose **Compare profile with survey sample** to generate descriptive comparisons.")
+        st.info("Enter a profile and choose **Compare profile with survey sample** to generate the risk estimate, cohort comparison and cluster context.")
 
 elif page == "Advanced Model Analytics":
     st.subheader("Advanced model analytics from saved artifacts")
     st.caption("All charts use Review 2 saved results—no refitting of research models.")
-    
+
     roc_tab, pr_tab, cm_tab, lc_tab, cal_tab, lift_tab, db_tab = st.tabs([
-        "ROC curves", "Precision–Recall", "Confusion matrices", 
+        "ROC curves", "Precision–Recall", "Confusion matrices",
         "Learning curves", "Calibration", "Lift / Gain", "Decision boundary"
     ])
-    
+
     with roc_tab:
         st.caption("ROC curves approximated from threshold trade-off points (full-file evaluation).")
         fig = go.Figure()
@@ -630,8 +988,10 @@ elif page == "Advanced Model Analytics":
         fig.update_layout(title="Approximate ROC from threshold points",
                           xaxis_title="False Positive Rate (1 - Specificity)",
                           yaxis_title="True Positive Rate (Recall)")
-        st.plotly_chart(darken(fig, 400), width="stretch")
-    
+        fig = darken(fig, 400)
+        fig.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.18, xanchor="left", x=0))
+        st.plotly_chart(fig, width="stretch")
+
     with pr_tab:
         st.caption("Precision–Recall curves from threshold trade-offs (full-file evaluation).")
         fig = go.Figure()
@@ -644,8 +1004,10 @@ elif page == "Advanced Model Analytics":
             ))
         fig.update_layout(title="Approximate PR from threshold points",
                           xaxis_title="Recall", yaxis_title="Precision")
-        st.plotly_chart(darken(fig, 400), width="stretch")
-    
+        fig = darken(fig, 400)
+        fig.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.18, xanchor="left", x=0))
+        st.plotly_chart(fig, width="stretch")
+
     with cm_tab:
         st.caption("Confusion matrices at default threshold 0.5 (balanced test). Values are illustrative from saved metrics.")
         thresh_50 = threshold_df[threshold_df.Threshold == 0.5].iloc[0]
@@ -663,9 +1025,9 @@ elif page == "Advanced Model Analytics":
                         x=["No Diabetes", "Diabetes"], y=["No Diabetes", "Diabetes"])
         fig.update_layout(title="Approximate confusion matrix at threshold 0.5")
         st.plotly_chart(darken(fig, 400), width="stretch")
-        
+
         st.caption("At threshold 0.5 on balanced test (descriptive only).")
-    
+
     with lc_tab:
         st.caption("Learning curves simulated by training on increasing fractions of balanced sample.")
         fractions = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
@@ -683,7 +1045,7 @@ elif page == "Advanced Model Analytics":
                           xaxis_title="Training data (%)", yaxis_title="Accuracy",
                           yaxis_range=[0.5, 0.85])
         st.plotly_chart(darken(fig, 400), width="stretch")
-    
+
     with cal_tab:
         st.caption("Calibration plot: predicted probability bins vs observed frequency (illustrative).")
         # Generate illustrative calibration from threshold data
@@ -703,7 +1065,7 @@ elif page == "Advanced Model Analytics":
                           xaxis_title="Mean predicted probability",
                           yaxis_title="Observed frequency")
         st.plotly_chart(darken(fig, 400), width="stretch")
-    
+
     with lift_tab:
         st.caption("Lift and gain charts from full-file threshold evaluation (descriptive).")
         # Use threshold_df for lift calculation
@@ -717,7 +1079,7 @@ elif page == "Advanced Model Analytics":
         fig.update_layout(title="Lift over baseline prevalence (~14%)",
                           xaxis_title="Decision threshold", yaxis_title="Lift")
         st.plotly_chart(darken(fig, 400), width="stretch")
-    
+
     with db_tab:
         st.caption("2D decision boundary visualization on PCA-reduced balanced sample (KNN & CART only).")
         st.info("Decision boundary visualization requires fitted models. This dashboard displays saved artifacts only. For actual boundaries, see the R scripts in review2/scripts/.")
@@ -730,84 +1092,20 @@ elif page == "Advanced Model Analytics":
         fig.update_layout(xaxis_visible=False, yaxis_visible=False, height=300)
         st.plotly_chart(darken(fig, 300), width="stretch")
 
-elif page == "What-If Explorer":
-    st.subheader("What-If Explorer: profile vs cluster context")
-    st.markdown('<div class="warning"><b>Descriptive only — not a clinical tool or risk prediction.</b> This compares your factor profile against saved K-Means cluster centroids from the balanced sample.</div>', unsafe_allow_html=True)
-    
-    with st.form("whatif_form", border=False):
-        st.caption("Enter your health factors to see how you compare to discovered clusters.")
-        a,b,c = st.columns(3)
-        age_band = a.select_slider("Age band", options=list(AGES), value=8, format_func=lambda x: AGES[x])
-        sex = b.selectbox("Sex", ["Female", "Male"])
-        bmi = c.number_input("BMI", min_value=12.0, max_value=98.0, value=28.0, step=.1)
-        d,e,f = st.columns(3)
-        high_bp = d.toggle("High blood pressure")
-        high_chol = e.toggle("High cholesterol")
-        active = f.toggle("Physically active", value=True)
-        g,h,i = st.columns(3)
-        diff_walk = g.toggle("Difficulty walking")
-        gen_hlth = h.selectbox("General health", list(HEALTH), index=2, format_func=lambda x: HEALTH[x])
-        income = i.selectbox("Income band", list(INCOME), index=5, format_func=lambda x: INCOME[x])
-        submit = st.form_submit_button("Explore cluster context", type="primary", width="stretch")
-    
-    if submit:
-        # Compute nearest cluster
-        profile_vec = np.array([bmi, int(high_bp)*100, int(high_chol)*100, age_band])
-        centers = cluster_df[["Mean_BMI","Pct_HighBP","Pct_HighChol","Mean_Age_Band"]].to_numpy(float)
-        scale = np.array([bal.BMI.std(), 50, 50, bal.Age.std()])
-        dists = np.sum(((centers - profile_vec) / scale)**2, axis=1)
-        nearest_idx = int(np.argmin(dists))
-        nearest = cluster_df.iloc[nearest_idx]
-        
-        st.markdown(f'<div class="insight"><b>Nearest cluster:</b> Cluster {int(nearest.Cluster)} — {nearest.Size:,} respondents, {nearest.Pct_Diabetes:.1f}% diabetes share in balanced sample.</div>', unsafe_allow_html=True)
-        
-        # Radar chart comparing profile to all cluster centroids
-        categories = ["BMI (norm)", "High BP (%)", "High Chol (%)", "Age band (norm)"]
-        user_vals = profile_vec / scale
-        fig = go.Figure()
-        fig.add_trace(go.Scatterpolar(r=user_vals, theta=categories, fill='toself', name='Your profile',
-                                       line_color=ORANGE, fillcolor='rgba(251,146,60,0.2)'))
-        for _, cl in cluster_df.iterrows():
-            cl_vec = np.array([cl.Mean_BMI, cl.Pct_HighBP, cl.Pct_HighChol, cl.Mean_Age_Band]) / scale
-            fig.add_trace(go.Scatterpolar(r=cl_vec, theta=categories, fill='toself',
-                                           name=f'Cluster {int(cl.Cluster)} ({cl.Pct_Diabetes:.1f}% diabetes)',
-                                           opacity=0.3, line_width=1))
-        fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, max(user_vals.max(), 2)])),
-                          title="Your profile vs cluster centroids (normalized)")
-        st.plotly_chart(darken(fig, 450), width="stretch")
-        
-        # Diabetes share by cluster
-        fig2 = px.bar(cluster_df, x=cluster_df.Cluster.astype(str), y="Pct_Diabetes",
-                       color=cluster_df.Cluster.astype(str), color_discrete_sequence=[TEAL, ORANGE, SKY],
-                       hover_data=["Size", "Mean_BMI", "Pct_HighBP", "Pct_HighChol"])
-        fig2.add_hline(y=bal.Diabetes_binary.mean()*100, line_dash="dash", line_color=MUTED,
-                        annotation_text="Balanced sample avg")
-        fig2.update_layout(title="Diabetes share by cluster (balanced sample)",
-                           xaxis_title="Cluster", yaxis_title="Diabetes share (%)", showlegend=False)
-        st.plotly_chart(darken(fig2, 350), width="stretch")
-        
-        # Show cluster details
-        st.dataframe(cluster_df.style.format({"Mean_BMI":"{:.1f}","Pct_HighBP":"{:.1f}%",
-                                               "Pct_HighChol":"{:.1f}%","Pct_Diabetes":"{:.1f}%"}),
-                     width="stretch", hide_index=True)
-        st.caption("Cluster diabetes shares are descriptive statistics from the balanced sample, not personal risk estimates.")
-    else:
-        st.info("Enter a profile and choose **Explore cluster context** to see descriptive comparisons.")
-
 elif page == "Methods & Limitations":
     st.subheader("How to read—and reproduce—these results")
     st.markdown("""**Workflow:** CDC BRFSS CSV → audit and EDA → SQLite star schema + OLAP → stratified preprocessing → models, rules, clusters → saved Review 1/2 artifacts → dashboard.
 
-**Reproducibility:** Review 2 uses seed 42. Scaling is fit on training data for distance-based methods. The full-population evaluation uses a separate split. Dashboard visuals display saved artifacts; they do not silently refit research models.""")
+**Reproducibility:** Review 2 uses seed 42. Scaling is fit on training data for distance-based methods. The full-population evaluation uses a separate split. Dashboard visuals display saved artifacts; the one exception is the My Health Profile page, which refits a CART with seed 42 on the balanced sample and states its accuracy on the *How this estimate is built* tab.""")
     st.markdown("#### Review 2 pipeline")
     for script, desc in [("01_preprocess.R","Data preparation and train/test split"),("02_decision_tree.R","CART and information-gain trees"),("03_knn.R","KNN and k selection"),("04_realistic_eval.R","Full-file realistic-prevalence evaluation"),("05_apriori.R","Association rules"),("06_clustering.R","K-Means and hierarchical clusters"),("07_final_comparison.R","Results sheet and model comparison")]:
         st.code(f"Rscript review2/scripts/{script}", language="bash"); st.caption(desc)
     st.markdown("#### Important limitations")
-    for note in ["The primary modeling data are deliberately balanced and do not estimate population prevalence.", "Prediabetes is coded as 0 in the binary target.", "Responses are self-reported, cross-sectional, and from 2015; association is not causation.", "WEKA uses 10-fold CV while R models use a held-out split.", "The My Health Profile page is descriptive survey comparison, not a clinical tool or risk prediction."]:
+    for note in ["The primary modeling data are deliberately balanced and do not estimate population prevalence.", "Prediabetes is coded as 0 in the binary target.", "Responses are self-reported, cross-sectional, and from 2015; association is not causation.", "WEKA uses 10-fold CV while R models use a held-out split.", "The My Health Profile page fits a CART on the balanced sample and prior-adjusts it to the population prevalence; it is a screening-style demonstration estimate, not a clinical tool, diagnosis, or personal risk statement.", "Gauge band cut-points are illustrative demo thresholds, not clinical thresholds."]:
         st.warning(note)
     st.markdown("#### Artifact provenance")
     st.write("Model comparison: `review2/results/model_comparison_all.csv` · threshold trade-off: `review2/results/threshold_tradeoff.csv` · rules: `review2/results/apriori_top_rules.csv` · clusters: `review2/results/cluster_profiles.csv` · OLAP: `review1/olap_results.json` · EDA: `review1/eda_metrics.json`.")
     st.page_link("https://www.cdc.gov/brfss/annual_data/annual_2015.html", label="CDC BRFSS 2015 annual data", icon="↗")
 
 st.divider()
-st.caption("Academic analytics prototype · CDC BRFSS 2015 · Saved project results are preserved as produced; no clinical use intended.")
+st.caption("Academic analytics prototype · CDC BRFSS 2015 · Saved project results are preserved as produced · the profile gauge is a screening demonstration, not clinical use.")
