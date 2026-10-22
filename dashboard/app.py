@@ -161,14 +161,18 @@ def _fit_profile_model(frame: pd.DataFrame, seed: int = 42):
     train_index, test_index = train_test_split(
         indices, test_size=0.3, stratify=y, random_state=seed)
 
-    def fit(features: list[str]):
+    def fit(features: list[str], max_depth: int = 6, min_samples_leaf: int = 50):
         X = frame[features].to_numpy(dtype=float)
-        model = DecisionTreeClassifier(random_state=seed, max_depth=6, min_samples_leaf=50)
+        model = DecisionTreeClassifier(
+            random_state=seed, max_depth=max_depth, min_samples_leaf=min_samples_leaf)
         model.fit(X[train_index], y[train_index])
         return model, float(model.score(X[test_index], y[test_index]))
 
     model, accuracy = fit(PROFILE_FEATURES)
-    full_model, full_accuracy = fit(PROFILE_FEATURES_FULL)
+    # The expanded model needs enough leaves for the newly collected predictors
+    # to participate in a prediction instead of being hidden by the nine-field
+    # tree's coarse leaf constraints.
+    full_model, full_accuracy = fit(PROFILE_FEATURES_FULL, max_depth=8, min_samples_leaf=20)
     return model, accuracy, full_model, full_accuracy
 
 
@@ -929,7 +933,7 @@ elif page == "My Health Profile":
             if extra_values.get("Education", 5) == 5.0:
                 assumed.append("Education")
             detail_rows = [
-                ("Model", "Decision tree (CART, Gini), scikit-learn, seed 42"),
+                ("Model", "Decision tree (CART, Gini), scikit-learn, seed 42; expanded model depth 8 / leaf 20"),
                 ("Features used", f"{len(PROFILE_FEATURES_FULL)} predictors — the Review 2 CART feature set"),
                 ("Training split", "70/30 stratified, seed 42 (balanced sample)"),
                 ("Held-out accuracy (all predictors)", f"{estimate['full_accuracy']:.1%}"),
